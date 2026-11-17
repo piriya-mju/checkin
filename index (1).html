@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เช็คชื่อด้วยใบหน้า</title>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<style>
+/*
+VOICE   studio kiosk, black stage, one orange signal
+IDEA    the FORMA hero: a face in darkness lit by an orange visor
+PICTURE the live camera fills the stage, recognised faces get an orange frame
+COLOUR  near-black #050506, ink panels #121215, signal orange #ff5a1f, out-blue #4d8dff
+TYPE    Inter Tight / Anuphan, Instrument Serif italic for the big word
+*/
+:root{--bg:#050506;--panel:#121215;--ink:#f4f2ee;--mute:#8e8e98;--line:#25252b;--in:#ff5a1f;--out:#4d8dff;--bad:#ff4d3d;
+--sans:"Inter Tight",Anuphan,system-ui,sans-serif;--serif:"Instrument Serif",Georgia,serif}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);min-height:100vh}
+.serif{font-family:var(--serif);font-style:italic;font-weight:400}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:12px 18px;min-height:46px;cursor:pointer;background:#24242a;color:var(--ink)}
+button:disabled{opacity:.4}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--in);outline-offset:2px}
+input,select{font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:#0b0b0d;color:var(--ink);width:100%}
+label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:14px;min-height:100vh}
+.stage{position:relative;background:#000;border-radius:22px;overflow:hidden;min-height:62vh}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 80% at 50% 120%,rgba(255,90,31,.35),transparent 55%)}
+video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.marks{position:absolute;inset:0;pointer-events:none;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);z-index:1}
+.marks i{position:relative}.marks i::before{content:"+";position:absolute;right:-6px;bottom:-14px;color:rgba(255,255,255,.55);font-size:22px;font-weight:300;font-style:normal}
+.marks i:nth-child(4n),.marks i:nth-child(n+9){visibility:hidden}
+.top{position:absolute;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;gap:12px;z-index:2;font-size:13px}
+.status{padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px)}
+.word{position:absolute;left:22px;bottom:18px;z-index:2;line-height:.86;pointer-events:none}
+.word b{display:block;font-size:clamp(54px,9vw,128px);font-weight:600;letter-spacing:-.045em}
+.word .serif{font-size:clamp(44px,7vw,104px)}
+.banner{position:absolute;left:16px;right:16px;bottom:16px;z-index:3;border-radius:20px;padding:20px 24px;background:rgba(10,10,12,.72);backdrop-filter:blur(14px);display:none;border-left:8px solid var(--in)}
+.banner.show{display:block;animation:pop .25s ease-out}
+.banner b{display:block;font-size:clamp(28px,4vw,48px);line-height:1.05;letter-spacing:-.02em}
+@keyframes pop{from{transform:translateY(12px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.banner.show{animation:none}}
+.side{display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode button{font-size:20px;min-height:76px;border-radius:18px}
+.mode .in.on{background:var(--in);color:#160600}.mode .out.on{background:var(--out);color:#04102a}
+.clock{font-size:52px;font-weight:600;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{min-height:36px;padding:6px 14px;font-size:14px;font-weight:500;background:#24242a}
+.pill.on{background:var(--ink);color:var(--bg)}
+.log{list-style:none;margin:0;padding:0;max-height:34vh;overflow:auto}
+.log li{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.tag{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.t-IN{background:rgba(255,90,31,.18);color:var(--in)}.t-OUT{background:rgba(77,141,255,.18);color:var(--out)}
+.tabs{display:flex;gap:6px}.tabs button{flex:1;min-height:42px;padding:8px;font-size:14px}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+.mute{color:var(--mute);font-size:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px}
+.chk input{width:22px;height:22px;flex:0 0 22px;margin-top:2px}
+.prog{height:8px;background:#24242a;border-radius:9px;overflow:hidden;margin-top:10px}.prog i{display:block;height:100%;width:0;background:var(--in);transition:width .2s}
+.setup{max-width:520px;margin:8vh auto;padding:16px}
+.err{color:var(--bad);font-size:14px;min-height:1em;margin-top:8px}
+@media(max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.stage{min-height:58vh}}
+</style>
+</head>
+<body>
+
+<div class="setup" id="setup" hidden>
+  <div class="panel">
+    <h1 style="margin:0 0 4px;font-size:34px;letter-spacing:-.03em">ตั้งค่า <span class="serif">Check-in.</span></h1>
+    <p class="mute">ทำครั้งเดียว เครื่องนี้จะจำค่าไว้</p>
+    <label for="url">Web App URL (ที่ได้จากการ Deploy ใน Apps Script)</label>
+    <input id="url" placeholder="https://script.google.com/macros/s/…/exec">
+    <label for="key">รหัสเครื่องเช็คชื่อ (Kiosk key)</label>
+    <input id="key" type="password">
+    <div style="margin-top:16px"><button id="save" style="background:var(--in);color:#160600">เชื่อมต่อ</button></div>
+    <div class="err" id="serr"></div>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="stage">
+    <video id="v" autoplay muted playsinline></video>
+    <canvas id="c"></canvas>
+    <div class="marks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="top"><span class="status" id="st">กำลังโหลดโมเดล…</span><span class="status" id="secnow">ทุกเซก</span></div>
+    <div class="word" id="word"><b>CHECK</b><span class="serif">In™</span></div>
+    <div class="banner" id="ban"><span class="mute" id="bsub"></span><b id="bname"></b><span id="bmsg"></span></div>
+  </div>
+  <div class="side">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:8px"><div><div class="mute" id="course">เช็คชื่อด้วยใบหน้า</div><div class="clock" id="clock">--:--</div></div>
+      <button id="fs" title="เต็มจอ" class="pill">เต็มจอ</button></div>
+    </div>
+    <div class="tabs"><button class="on" data-t="scan">สแกนเช็คชื่อ</button><button data-t="reg">ลงทะเบียนใบหน้า</button><button data-t="cfg">ตั้งค่า</button></div>
+
+    <div class="panel" id="p-scan">
+      <div class="mute" style="margin-bottom:8px">รายวิชา</div>
+      <div class="pills" id="kcourses" style="margin-bottom:12px"></div>
+      <div class="mute" style="margin-bottom:8px">เซกที่กำลังเรียน</div>
+      <div class="pills" id="ksecs" style="margin-bottom:12px"></div>
+      <div class="mode"><button class="in on" data-m="IN">เข้าเรียน</button><button class="out" data-m="OUT">ออก</button></div>
+      <p class="mute" style="margin:10px 0 0">กด I หรือ O บนคีย์บอร์ดเพื่อสลับโหมด</p>
+      <h3 style="margin:16px 0 4px;font-size:16px">ล่าสุด <span class="mute" id="qn"></span></h3>
+      <ul class="log" id="log"></ul>
+    </div>
+
+    <div class="panel" id="p-reg" hidden>
+      <label for="who">นักศึกษา</label>
+      <select id="who"></select>
+      <div class="chk"><input type="checkbox" id="consent"><label for="consent" style="margin:0;color:var(--ink)">นักศึกษายินยอมให้เก็บข้อมูลใบหน้า (เก็บเป็นตัวเลข 128 ค่า ไม่เก็บรูป) เพื่อใช้เช็คชื่อในรายวิชาที่ลงทะเบียนเรียนเท่านั้น และขอลบได้ทุกเมื่อ</label></div>
+      <p class="mute">ให้นักศึกษามองกล้องตรง ๆ ในที่แสงพอ หันซ้ายขวาเล็กน้อยระหว่างเก็บ</p>
+      <button id="cap" style="width:100%;background:var(--in);color:#160600">เริ่มเก็บใบหน้า</button>
+      <div class="prog"><i id="pb"></i></div>
+      <div class="err" id="rerr"></div>
+    </div>
+
+    <div class="panel" id="p-cfg" hidden>
+      <label for="cam">กล้อง</label><select id="cam"></select>
+      <label for="thr">ความเข้มงวดในการจำหน้า <span id="thrv"></span></label>
+      <input type="range" id="thr" min="0.35" max="0.6" step="0.01" style="padding:0">
+      <p class="mute">ค่าน้อย = เข้มงวด (จำผิดคนน้อยลง แต่อาจจำไม่ได้บ่อยขึ้น) แนะนำ 0.45-0.5</p>
+      <button id="reload" style="width:100%">โหลดรายชื่อใบหน้าใหม่</button>
+      <button id="reset" style="width:100%;margin-top:8px">เปลี่ยน Web App / รหัสเครื่อง</button>
+    </div>
+  </div>
+</div>
+
+<script>
+{
+const $ = id => document.getElementById(id);
+const MODEL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/';
+const store = { get: (k, d) => { try { const v = localStorage.getItem('kiosk_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: (k, v) => { try { localStorage.setItem('kiosk_' + k, JSON.stringify(v)); } catch (e) {} } };
+let cfg = store.get('cfg', null), mode = 'IN', faces = [], matcher = null, students = [];
+let ksec = store.get('ksec', 'all'), kcourse = store.get('kcourse', ''), courses = [], sections = [], allFaces = [], wake = null;
+let threshold = store.get('thr', 0.48), busyReg = false, streak = { id: null, n: 0 }, seen = {}, queue = store.get('queue', []);
+
+async function api(body) {
+  const r = await fetch(cfg.url, { method: 'POST', body: JSON.stringify(Object.assign({ key: cfg.key }, body)) });
+  const t = await r.text();
+  let j;
+  try { j = JSON.parse(t); }
+  catch (e) {
+    if (/accounts\.google|ServiceLogin|signin/i.test(t)) throw new Error('Google ให้ล็อกอินก่อน แปลว่า Web App ยังไม่ได้ตั้งผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน"');
+    throw new Error('Web App ตอบกลับมาไม่ถูกต้อง เช็คว่าลิงก์ลงท้ายด้วย /exec และตั้งผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน"');
+  }
+  if (!j.ok) throw new Error(j.error || 'เชื่อมต่อไม่ได้');
+  return j;
+}
+
+/* ---------- ตั้งค่า ---------- */
+async function connect() {
+  let url = $('url').value.trim().split('?')[0].split('#')[0];
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) return $('serr').textContent = 'ลิงก์ต้องขึ้นต้นด้วย https://script.google.com และลงท้ายด้วย /exec';
+  if (!$('key').value.trim()) return $('serr').textContent = 'ใส่รหัสเครื่องเช็คชื่อก่อน';
+  $('url').value = url;
+  cfg = { url: url, key: $('key').value.trim() };
+  $('serr').textContent = 'กำลังเชื่อมต่อ…';
+  try { const j = await api({ action: 'ping' }); store.set('cfg', cfg); $('serr').textContent = ''; boot(); }
+  catch (e) { $('serr').textContent = 'เชื่อมต่อไม่สำเร็จ ' + e.message; }
+}
+$('save').onclick = connect;
+$('reset').onclick = () => { store.set('cfg', null); location.reload(); };
+
+/* ---------- เริ่มระบบ ---------- */
+async function boot() {
+  $('setup').hidden = true; $('app').hidden = false;
+  setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); }, 1000);
+  try {
+    if (typeof faceapi === 'undefined') throw new Error('โหลดไลบรารีไม่ได้ ตรวจอินเทอร์เน็ต');
+    try { await faceapi.tf.setBackend('webgl'); } catch (e) {}
+    await faceapi.tf.ready();
+    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL), faceapi.nets.faceLandmark68Net.loadFromUri(MODEL), faceapi.nets.faceRecognitionNet.loadFromUri(MODEL)]);
+    await startCam(store.get('cam', ''));
+    await loadFaces();
+    keepAwake();
+    loop();
+  } catch (e) { status('เริ่มระบบไม่ได้ ' + e.message); }
+  setInterval(flush, 20000);
+}
+
+async function startCam(id) {
+  const v = $('v');
+  if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+  const s = await navigator.mediaDevices.getUserMedia({ video: id ? { deviceId: { exact: id } } : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: false });
+  v.srcObject = s; await v.play();
+  const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  $('cam').innerHTML = cams.map((c, i) => '<option value="' + c.deviceId + '"' + (c.deviceId === (id || s.getVideoTracks()[0].getSettings().deviceId) ? ' selected' : '') + '>' + (c.label || 'กล้อง ' + (i + 1)) + '</option>').join('');
+}
+$('cam').onchange = e => { store.set('cam', e.target.value); startCam(e.target.value); };
+
+async function loadFaces() {
+  status('กำลังโหลดรายชื่อ…');
+  courses = (await api({ action: 'courses' })).courses;
+  if (!courses.some(c => c.id === kcourse)) kcourse = courses.length ? courses[0].id : '';
+  store.set('kcourse', kcourse);
+  const c = courses.find(x => x.id === kcourse);
+  sections = c ? c.sections : [];
+  if (ksec !== 'all' && !sections.some(x => x.id === ksec)) ksec = 'all';
+  if (c) { const r = await api({ action: 'roster', course_id: kcourse }); faces = r.faces; students = r.students; allFaces = r.allFaces; }
+  else { faces = []; students = []; status('ยังไม่มีรายวิชาที่เปิดอยู่ เพิ่มได้ในหน้าอาจารย์'); }
+  $('course').textContent = c ? (c.code ? c.code + ' ' : '') + c.name + ' · ' + c.term : 'เช็คชื่อด้วยใบหน้า';
+  buildMatcher(); drawSecs();
+}
+
+function buildMatcher() {
+  const use = faces.filter(x => ksec === 'all' || x.section === ksec);
+  matcher = use.length ? new faceapi.FaceMatcher(use.map(x => new faceapi.LabeledFaceDescriptors(x.id, [new Float32Array(x.d)])), threshold) : null;
+  const inSec = students.filter(x => ksec === 'all' || x.section === ksec);
+  $('who').innerHTML = inSec.map(x => '<option value="' + x.id + '">' + (x.hasFace ? '✓ ' : '') + x.id + ' ' + x.name + '</option>').join('');
+  status('พร้อม · ลงทะเบียนแล้ว ' + use.length + '/' + inSec.length + ' คน');
+}
+
+function drawSecs() {
+  $('kcourses').innerHTML = courses.map(c => '<button class="pill' + (c.id === kcourse ? ' on' : '') + '" data-kc="' + c.id + '">' + c.name + '</button>').join('') || '<span class="mute">ยังไม่มีรายวิชา</span>';
+  $('kcourses').querySelectorAll('[data-kc]').forEach(b => b.onclick = () => { if (b.dataset.kc === kcourse) return; kcourse = b.dataset.kc; ksec = 'all'; store.set('kcourse', kcourse); store.set('ksec', ksec); streak = { id: null, n: 0 }; seen = {}; loadFaces().catch(e => status(e.message)); });
+  const name = ksec === 'all' ? 'ทุกเซก' : (sections.find(x => x.id === ksec) || {}).name;
+  $('secnow').textContent = name;
+  $('ksecs').innerHTML = [{ id: 'all', name: 'ทุกเซก' }].concat(sections).map(x => '<button class="pill' + (x.id === ksec ? ' on' : '') + '" data-k="' + x.id + '">' + x.name + '</button>').join('');
+  $('ksecs').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { ksec = b.dataset.k; store.set('ksec', ksec); streak = { id: null, n: 0 }; buildMatcher(); drawSecs(); });
+}
+
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+document.addEventListener('visibilitychange', keepAwake);
+$('reload').onclick = () => loadFaces().then(() => { $('rerr').style.color = 'var(--in)'; $('rerr').textContent = 'โหลดรายชื่อใหม่แล้ว ' + students.length + ' คน'; }).catch(e => status(e.message));
+
+function status(t) { $('st').textContent = t; }
+const nameOf = id => (students.find(s => String(s.id) === String(id)) || {}).name || id;
+
+/* ---------- วนสแกน ---------- */
+const opts = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 });
+async function loop() {
+  const v = $('v'), c = $('c');
+  if (v.readyState >= 2 && !busyReg) {
+    const res = await faceapi.detectAllFaces(v, opts()).withFaceLandmarks().withFaceDescriptors();
+    draw(res);
+    if (matcher) {
+      const big = res.filter(r => r.detection.box.width > v.videoWidth * 0.12).sort((a, b) => b.detection.box.area - a.detection.box.area)[0];
+      if (big) {
+        const m = matcher.findBestMatch(big.descriptor);
+        if (m.label !== 'unknown') {
+          streak = streak.id === m.label ? { id: m.label, n: streak.n + 1 } : { id: m.label, n: 1 };
+          if (streak.n >= 3) { checkin(m.label, m.distance); streak = { id: null, n: 0 }; }
+        } else streak = { id: null, n: 0 };
+      }
+    }
+  }
+  setTimeout(loop, 250);
+}
+
+function draw(res) {
+  const v = $('v'), c = $('c');
+  const W = c.clientWidth, H = c.clientHeight;
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const k = Math.max(W / v.videoWidth, H / v.videoHeight), ox = (W - v.videoWidth * k) / 2, oy = (H - v.videoHeight * k) / 2;
+  res.forEach(r => {
+    const b = r.detection.box, m = matcher ? matcher.findBestMatch(r.descriptor) : { label: 'unknown' };
+    const known = m.label !== 'unknown', col = known ? (mode === 'IN' ? '#ff5a1f' : '#4d8dff') : 'rgba(255,255,255,.6)';
+    const x = b.x * k + ox, y = b.y * k + oy, w = b.width * k, h = b.height * k;
+    g.strokeStyle = col; g.lineWidth = 4; g.strokeRect(x, y, w, h);
+    g.save(); g.scale(-1, 1);
+    const label = known ? nameOf(m.label) : 'ไม่รู้จัก';
+    g.font = '600 18px Anuphan, sans-serif';
+    const tw = g.measureText(label).width + 16;
+    g.fillStyle = col; g.fillRect(-(x + w), y - 30, Math.max(tw, w), 28);
+    g.fillStyle = known ? '#0b0b0e' : '#000'; g.fillText(label, -(x + w) + 8, y - 10);
+    g.restore();
+  });
+}
+
+/* ---------- บันทึกเช็คชื่อ ---------- */
+async function checkin(id, dist) {
+  const key = kcourse + '|' + id + '|' + mode + '|' + new Date().toDateString();
+  const last = seen[key] || 0;
+  if (Date.now() - last < (mode === 'IN' ? 6 * 3600e3 : 3 * 60e3)) return;
+  seen[key] = Date.now();
+  const ts = new Date().toISOString();
+  show(nameOf(id), mode, '', 'กำลังบันทึก…');
+  beep(mode === 'IN' ? 880 : 660);
+  try {
+    const r = await api({ action: 'log', course_id: kcourse, student_id: id, type: mode, distance: Math.round(dist * 1000) / 1000, ts: ts });
+    const msg = r.duplicate ? 'เช็คชื่อไปแล้วเมื่อ ' + r.time : (mode === 'IN' ? 'เข้าเรียน ' + r.time + ' · ' + r.status : 'ออก ' + r.time + (r.status === 'ออกก่อนเวลา' ? ' · ออกก่อนเวลา' : ''));
+    show(r.name, mode, id, msg);
+    addLog(r.name, mode, r.time);
+  } catch (e) {
+    queue.push({ course_id: kcourse, student_id: id, type: mode, distance: dist, ts: ts }); store.set('queue', queue);
+    show(nameOf(id), mode, id, 'บันทึกไว้ในเครื่อง จะส่งเมื่อเน็ตกลับมา');
+    addLog(nameOf(id), mode, new Date().toTimeString().slice(0, 5));
+  }
+  $('qn').textContent = queue.length ? '(รอส่ง ' + queue.length + ')' : '';
+}
+
+async function flush() {
+  if (!queue.length || !cfg) return;
+  const left = [];
+  for (const q of queue) { try { await api(Object.assign({ action: 'log' }, q)); } catch (e) { left.push(q); } }
+  queue = left; store.set('queue', queue);
+  $('qn').textContent = queue.length ? '(รอส่ง ' + queue.length + ')' : '';
+}
+
+let banT;
+function show(name, m, id, msg) {
+  const b = $('ban');
+  $('bsub').textContent = (m === 'IN' ? 'เข้าเรียน' : 'ออก') + (id ? ' · ' + id : '');
+  $('bname').textContent = name; $('bmsg').textContent = msg;
+  b.style.borderLeft = '8px solid ' + (m === 'IN' ? 'var(--in)' : 'var(--out)');
+  b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); $('word').style.visibility = 'hidden';
+  clearTimeout(banT); banT = setTimeout(() => { b.classList.remove('show'); $('word').style.visibility = ''; }, 3500);
+}
+
+function addLog(name, m, t) {
+  const li = document.createElement('li');
+  li.innerHTML = '<span></span><span><span class="tag t-' + m + '">' + (m === 'IN' ? 'เข้า' : 'ออก') + '</span> ' + t + '</span>';
+  li.firstChild.textContent = name;
+  $('log').prepend(li);
+  while ($('log').children.length > 60) $('log').lastChild.remove();
+}
+
+let ac;
+function beep(f) {
+  try { ac = ac || new AudioContext(); const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = f; g.gain.setValueAtTime(.15, ac.currentTime); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + .25);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + .25); } catch (e) {}
+}
+
+/* ---------- ลงทะเบียนใบหน้า ---------- */
+$('cap').onclick = async () => {
+  const id = $('who').value;
+  $('rerr').style.color = ''; $('rerr').textContent = '';
+  if (typeof faceapi === 'undefined' || !faceapi.nets.faceRecognitionNet.isLoaded) return $('rerr').textContent = 'โมเดลจำหน้ายังโหลดไม่เสร็จ รอให้มุมซ้ายบนของกล้องขึ้นคำว่า พร้อม ก่อน ถ้าค้างนานให้รีเฟรชหน้า';
+  if (!$('v').srcObject || $('v').readyState < 2) return $('rerr').textContent = 'กล้องยังไม่ทำงาน กดอนุญาตให้ใช้กล้องที่แถบด้านบนของเบราว์เซอร์ แล้วรีเฟรชหน้า';
+  if (!courses.length) return $('rerr').textContent = 'ยังไม่มีรายวิชาที่เปิดอยู่ สร้างรายวิชาในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่';
+  if (!id) return $('rerr').textContent = 'ยังไม่มีชื่อนักศึกษาให้เลือก เพิ่มรายชื่อในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่ (ถ้าเลือกเซกไว้ ลองกดทุกเซก)';
+  if (busyReg) return;
+  if (!$('consent').checked) return $('rerr').textContent = 'ต้องติ๊กยืนยันความยินยอมก่อน';
+  busyReg = true; $('cap').disabled = true;
+  const got = [];
+  const t0 = Date.now();
+  while (got.length < 8 && Date.now() - t0 < 15000) {
+    const r = await faceapi.detectAllFaces($('v'), opts()).withFaceLandmarks().withFaceDescriptors();
+    draw(r);
+    if (r.length === 1 && r[0].detection.score > 0.75) { got.push(r[0].descriptor); $('pb').style.width = (got.length / 8 * 100) + '%'; }
+    else if (r.length > 1) $('rerr').textContent = 'ให้มีหน้าเดียวในกล้อง';
+    await new Promise(z => setTimeout(z, 300));
+  }
+  busyReg = false; $('cap').disabled = false;
+  if (got.length < 5) { $('pb').style.width = 0; return $('rerr').textContent = got.length ? 'เก็บใบหน้าได้ไม่ครบ ลองใหม่ในที่แสงดีขึ้น และมองกล้องตรง ๆ' : 'กล้องมองไม่เห็นใบหน้าเลย ขยับเข้าใกล้กล้อง เปิดไฟให้สว่างขึ้น และให้มีคนเดียวในกล้อง'; }
+  const avg = Array.from({ length: 128 }, (_, i) => got.reduce((t, d) => t + d[i], 0) / got.length);
+  const clash = allFaces.filter(f => f.id !== id).map(f => ({ f: f, d: faceapi.euclideanDistance(avg, f.d) })).sort((a, b) => a.d - b.d)[0];
+  if (clash && clash.d < 0.4 && !$('cap').dataset.force) {
+    $('cap').dataset.force = 1;
+    $('pb').style.width = 0;
+    return $('rerr').textContent = 'หน้านี้คล้ายนักศึกษารหัส ' + clash.f.id + ' มาก ถ้าแน่ใจว่าคนละคนให้กดเก็บอีกครั้ง';
+  }
+  delete $('cap').dataset.force;
+  try {
+    const r = await api({ action: 'register', student_id: id, descriptor: avg, consent: true });
+    $('rerr').style.color = 'var(--in)'; $('rerr').textContent = 'ลงทะเบียน ' + r.name + ' เรียบร้อย';
+    setTimeout(() => { $('rerr').style.color = ''; $('rerr').textContent = ''; $('pb').style.width = 0; }, 3000);
+    $('consent').checked = false;
+    await loadFaces();
+  } catch (e) { $('rerr').textContent = e.message; }
+};
+
+/* ---------- UI ---------- */
+function setMode(m) { mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); streak = { id: null, n: 0 }; }
+document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => setMode(b.dataset.m));
+document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === 'i' || e.key === 'I') setMode('IN'); if (e.key === 'o' || e.key === 'O') setMode('OUT'); });
+document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
+  ['scan', 'reg', 'cfg'].forEach(t => $('p-' + t).hidden = t !== b.dataset.t);
+});
+$('thr').value = threshold; $('thrv').textContent = threshold;
+$('thr').oninput = e => { threshold = +e.target.value; $('thrv').textContent = threshold; store.set('thr', threshold); if (faces.length) buildMatcher(); };
+$('fs').onclick = () => { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); };
+
+if (cfg && cfg.url) boot(); else { $('setup').hidden = false; }
+}
+</script>
+</body>
+</html>
