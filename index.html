@@ -228,7 +228,7 @@ async function keepAwake() {
   try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch (e) {}
 }
 document.addEventListener('visibilitychange', keepAwake);
-$('reload').onclick = () => loadFaces().catch(e => status(e.message));
+$('reload').onclick = () => loadFaces().then(() => { $('rerr').style.color = 'var(--in)'; $('rerr').textContent = 'โหลดรายชื่อใหม่แล้ว ' + students.length + ' คน'; }).catch(e => status(e.message));
 
 function status(t) { $('st').textContent = t; }
 const nameOf = id => (students.find(s => String(s.id) === String(id)) || {}).name || id;
@@ -333,8 +333,12 @@ function beep(f) {
 /* ---------- ลงทะเบียนใบหน้า ---------- */
 $('cap').onclick = async () => {
   const id = $('who').value;
-  $('rerr').textContent = '';
-  if (!id) return;
+  $('rerr').style.color = ''; $('rerr').textContent = '';
+  if (typeof faceapi === 'undefined' || !faceapi.nets.faceRecognitionNet.isLoaded) return $('rerr').textContent = 'โมเดลจำหน้ายังโหลดไม่เสร็จ รอให้มุมซ้ายบนของกล้องขึ้นคำว่า พร้อม ก่อน ถ้าค้างนานให้รีเฟรชหน้า';
+  if (!$('v').srcObject || $('v').readyState < 2) return $('rerr').textContent = 'กล้องยังไม่ทำงาน กดอนุญาตให้ใช้กล้องที่แถบด้านบนของเบราว์เซอร์ แล้วรีเฟรชหน้า';
+  if (!courses.length) return $('rerr').textContent = 'ยังไม่มีรายวิชาที่เปิดอยู่ สร้างรายวิชาในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่';
+  if (!id) return $('rerr').textContent = 'ยังไม่มีชื่อนักศึกษาให้เลือก เพิ่มรายชื่อในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่ (ถ้าเลือกเซกไว้ ลองกดทุกเซก)';
+  if (busyReg) return;
   if (!$('consent').checked) return $('rerr').textContent = 'ต้องติ๊กยืนยันความยินยอมก่อน';
   busyReg = true; $('cap').disabled = true;
   const got = [];
@@ -347,7 +351,7 @@ $('cap').onclick = async () => {
     await new Promise(z => setTimeout(z, 300));
   }
   busyReg = false; $('cap').disabled = false;
-  if (got.length < 5) { $('pb').style.width = 0; return $('rerr').textContent = 'เก็บใบหน้าไม่ครบ ลองใหม่ในที่แสงดีขึ้น'; }
+  if (got.length < 5) { $('pb').style.width = 0; return $('rerr').textContent = got.length ? 'เก็บใบหน้าได้ไม่ครบ ลองใหม่ในที่แสงดีขึ้น และมองกล้องตรง ๆ' : 'กล้องมองไม่เห็นใบหน้าเลย ขยับเข้าใกล้กล้อง เปิดไฟให้สว่างขึ้น และให้มีคนเดียวในกล้อง'; }
   const avg = Array.from({ length: 128 }, (_, i) => got.reduce((t, d) => t + d[i], 0) / got.length);
   const clash = allFaces.filter(f => f.id !== id).map(f => ({ f: f, d: faceapi.euclideanDistance(avg, f.d) })).sort((a, b) => a.d - b.d)[0];
   if (clash && clash.d < 0.4 && !$('cap').dataset.force) {
