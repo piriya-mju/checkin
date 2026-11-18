@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>เช็คชื่อด้วยใบหน้า</title>
+<title>เช็คชื่อ CMT·MJU</title>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /*
 VOICE   studio kiosk, black stage, one orange signal
@@ -64,7 +64,16 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 .setup{max-width:520px;margin:8vh auto;padding:16px}
 .err{color:var(--bad);font-size:14px;min-height:1em;margin-top:8px}
 @media(max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.stage{min-height:58vh}}
+
+.name{font-size:clamp(30px,4.5vw,56px);font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.list{list-style:none;margin:8px 0 0;padding:0;max-height:46vh;overflow:auto}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.list button{min-height:40px;padding:6px 14px;font-size:14px}
+.big{font-size:22px;letter-spacing:.2em;text-transform:uppercase;text-align:center}
+.roll{display:grid;gap:8px;margin-top:10px}.roll div{background:#24242a;border-radius:14px;padding:12px 14px;font-size:20px;font-weight:600}
+.frame{position:absolute;inset:18% 26%;border:3px solid rgba(255,255,255,.75);border-radius:24px;z-index:1;pointer-events:none}
 </style>
+
 </head>
 <body>
 
@@ -84,18 +93,19 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 <div class="app" id="app" hidden>
   <div class="stage">
     <video id="v" autoplay muted playsinline></video>
-    <canvas id="c"></canvas>
+    <canvas id="c" hidden></canvas>
+    <div class="frame" aria-hidden="true"></div>
     <div class="marks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="top"><span class="status" id="st">กำลังโหลดโมเดล…</span><span class="status" id="secnow">ทุกเซก</span></div>
-    <div class="word" id="word"><b>CHECK</b><span class="serif">In™</span></div>
-    <div class="banner" id="ban"><span class="mute" id="bsub"></span><b id="bname"></b><span id="bmsg"></span></div>
+    <div class="top"><span class="status" id="st">กำลังเปิดกล้อง…</span><span class="status" id="secnow">ทุกเซก</span></div>
+    <div class="word" id="word"><b>SCAN</b><span class="serif">QR™</span></div>
+    <div class="banner" id="ban"><span class="mute" id="bsub"></span><div class="name" id="bname"></div><span id="bmsg"></span></div>
   </div>
   <div class="side">
     <div class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:end;gap:8px"><div><div class="mute" id="course">เช็คชื่อด้วยใบหน้า</div><div class="clock" id="clock">--:--</div></div>
-      <button id="fs" title="เต็มจอ" class="pill">เต็มจอ</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:8px"><div><div class="mute" id="course">เช็คชื่อ</div><div class="clock" id="clock">--:--</div></div>
+      <div style="text-align:right"><div class="clock" style="font-size:40px" id="count">0</div><div class="mute" id="countof">คนเช็คชื่อแล้ว</div></div></div>
     </div>
-    <div class="tabs"><button class="on" data-t="scan">สแกนเช็คชื่อ</button><button data-t="reg">ลงทะเบียนใบหน้า</button><button data-t="cfg">ตั้งค่า</button></div>
+    <div class="tabs"><button class="on" data-t="scan">สแกน</button><button data-t="list">ไม่มีมือถือ</button><button data-t="roll">สุ่มขานชื่อ</button><button data-t="cfg">ตั้งค่า</button></div>
 
     <div class="panel" id="p-scan">
       <div class="mute" style="margin-bottom:8px">รายวิชา</div>
@@ -103,41 +113,45 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
       <div class="mute" style="margin-bottom:8px">เซกที่กำลังเรียน</div>
       <div class="pills" id="ksecs" style="margin-bottom:12px"></div>
       <div class="mode"><button class="in on" data-m="IN">เข้าเรียน</button><button class="out" data-m="OUT">ออก</button></div>
-      <p class="mute" style="margin:10px 0 0">กด I หรือ O บนคีย์บอร์ดเพื่อสลับโหมด</p>
+      <label for="code">กล้องอ่านไม่ได้ ให้พิมพ์รหัส 4 ตัวจากมือถือนักศึกษา</label>
+      <div style="display:flex;gap:8px"><input id="code" class="big" maxlength="4" autocomplete="off"><button id="sendcode" style="background:var(--in);color:#160600">ยืนยัน</button></div>
       <h3 style="margin:16px 0 4px;font-size:16px">ล่าสุด <span class="mute" id="qn"></span></h3>
       <ul class="log" id="log"></ul>
     </div>
 
-    <div class="panel" id="p-reg" hidden>
-      <label for="who">นักศึกษา</label>
-      <select id="who"></select>
-      <div class="chk"><input type="checkbox" id="consent"><label for="consent" style="margin:0;color:var(--ink)">นักศึกษายินยอมให้เก็บข้อมูลใบหน้า (เก็บเป็นตัวเลข 128 ค่า ไม่เก็บรูป) เพื่อใช้เช็คชื่อในรายวิชาที่ลงทะเบียนเรียนเท่านั้น และขอลบได้ทุกเมื่อ</label></div>
-      <p class="mute">ให้นักศึกษามองกล้องตรง ๆ ในที่แสงพอ หันซ้ายขวาเล็กน้อยระหว่างเก็บ</p>
-      <button id="cap" style="width:100%;background:var(--in);color:#160600">เริ่มเก็บใบหน้า</button>
-      <div class="prog"><i id="pb"></i></div>
-      <div class="err" id="rerr"></div>
+    <div class="panel" id="p-list" hidden>
+      <div class="mute">รายชื่อที่ยังไม่เช็คชื่อ ให้นักศึกษาที่ไม่มีมือถือแตะชื่อตัวเองต่อหน้าอาจารย์</div>
+      <input id="q" placeholder="ค้นหารหัสหรือชื่อ" style="margin-top:10px">
+      <ul class="list" id="miss"></ul>
+    </div>
+
+    <div class="panel" id="p-roll" hidden>
+      <div class="mute">สุ่มจากคนที่เช็คชื่อเข้าเรียนวันนี้ ขานชื่อแล้วให้ยกมือ ถ้าไม่อยู่ในห้อง กดไม่อยู่ ระบบจะลบการเช็คชื่อของคนนั้น</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><select id="rolln" style="width:110px"><option>3</option><option selected>5</option><option>10</option></select><button id="rollgo" style="flex:1;background:var(--in);color:#160600">สุ่มขานชื่อ</button></div>
+      <div class="roll" id="rollout"></div>
     </div>
 
     <div class="panel" id="p-cfg" hidden>
       <label for="cam">กล้อง</label><select id="cam"></select>
-      <label for="thr">ความเข้มงวดในการจำหน้า <span id="thrv"></span></label>
-      <input type="range" id="thr" min="0.35" max="0.6" step="0.01" style="padding:0">
-      <p class="mute">ค่าน้อย = เข้มงวด (จำผิดคนน้อยลง แต่อาจจำไม่ได้บ่อยขึ้น) แนะนำ 0.45-0.5</p>
-      <button id="reload" style="width:100%">โหลดรายชื่อใบหน้าใหม่</button>
+      <button id="reload" style="width:100%;margin-top:12px">โหลดรายชื่อใหม่</button>
       <button id="reset" style="width:100%;margin-top:8px">เปลี่ยน Web App / รหัสเครื่อง</button>
+      <div class="err" id="cerr"></div>
     </div>
   </div>
 </div>
 
 <script>
+window.onerror = (m, s, l) => { const e = document.getElementById('st'); if (e) e.textContent = 'ผิดพลาด ' + m + ' (บรรทัด ' + l + ')'; };
+</script>
+<script>
 {
 const $ = id => document.getElementById(id);
-const MODEL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const store = { get: (k, d) => { try { const v = localStorage.getItem('kiosk_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set: (k, v) => { try { localStorage.setItem('kiosk_' + k, JSON.stringify(v)); } catch (e) {} } };
-let cfg = store.get('cfg', null), mode = 'IN', faces = [], matcher = null, students = [];
-let ksec = store.get('ksec', 'all'), kcourse = store.get('kcourse', ''), courses = [], sections = [], allFaces = [], wake = null;
-let threshold = store.get('thr', 0.48), busyReg = false, streak = { id: null, n: 0 }, seen = {}, queue = store.get('queue', []);
+let cfg = store.get('cfg', null), mode = 'IN', kcourse = store.get('kcourse', ''), ksec = store.get('ksec', 'all');
+let courses = [], sections = [], students = [], today = { in: [], out: [] }, queue = store.get('queue', []);
+let lastTok = '', lastAt = 0, wake = null, recent = {};
 
 async function api(body) {
   const r = await fetch(cfg.url, { method: 'POST', body: JSON.stringify(Object.assign({ key: cfg.key }, body)) });
@@ -146,41 +160,34 @@ async function api(body) {
   try { j = JSON.parse(t); }
   catch (e) {
     if (/accounts\.google|ServiceLogin|signin/i.test(t)) throw new Error('Google ให้ล็อกอินก่อน แปลว่า Web App ยังไม่ได้ตั้งผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน"');
-    throw new Error('Web App ตอบกลับมาไม่ถูกต้อง เช็คว่าลิงก์ลงท้ายด้วย /exec และตั้งผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน"');
+    throw new Error('Web App ตอบกลับมาไม่ถูกต้อง เช็คว่าลิงก์ลงท้ายด้วย /exec');
   }
-  if (!j.ok) throw new Error(j.error || 'เชื่อมต่อไม่ได้');
+  if (!j.ok && !j.name) throw new Error(j.error || 'เชื่อมต่อไม่ได้');
   return j;
 }
 
 /* ---------- ตั้งค่า ---------- */
-async function connect() {
-  let url = $('url').value.trim().split('?')[0].split('#')[0];
+$('save').onclick = async () => {
+  const url = $('url').value.trim().split('?')[0].split('#')[0];
   if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) return $('serr').textContent = 'ลิงก์ต้องขึ้นต้นด้วย https://script.google.com และลงท้ายด้วย /exec';
   if (!$('key').value.trim()) return $('serr').textContent = 'ใส่รหัสเครื่องเช็คชื่อก่อน';
-  $('url').value = url;
   cfg = { url: url, key: $('key').value.trim() };
   $('serr').textContent = 'กำลังเชื่อมต่อ…';
-  try { const j = await api({ action: 'ping' }); store.set('cfg', cfg); $('serr').textContent = ''; boot(); }
+  try { await api({ action: 'ping' }); store.set('cfg', cfg); $('serr').textContent = ''; boot(); }
   catch (e) { $('serr').textContent = 'เชื่อมต่อไม่สำเร็จ ' + e.message; }
-}
-$('save').onclick = connect;
+};
 $('reset').onclick = () => { store.set('cfg', null); location.reload(); };
 
-/* ---------- เริ่มระบบ ---------- */
+/* ---------- เริ่ม ---------- */
 async function boot() {
   $('setup').hidden = true; $('app').hidden = false;
   setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); }, 1000);
-  try {
-    if (typeof faceapi === 'undefined') throw new Error('โหลดไลบรารีไม่ได้ ตรวจอินเทอร์เน็ต');
-    try { await faceapi.tf.setBackend('webgl'); } catch (e) {}
-    await faceapi.tf.ready();
-    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL), faceapi.nets.faceLandmark68Net.loadFromUri(MODEL), faceapi.nets.faceRecognitionNet.loadFromUri(MODEL)]);
-    await startCam(store.get('cam', ''));
-    await loadFaces();
-    keepAwake();
-    loop();
-  } catch (e) { status('เริ่มระบบไม่ได้ ' + e.message); }
-  setInterval(flush, 20000);
+  try { await startCam(store.get('cam', '')); } catch (e) { status('เปิดกล้องไม่ได้ กดอนุญาตกล้องแล้วรีเฟรช'); }
+  await loadAll().catch(e => status(e.message));
+  keepAwake();
+  scanLoop();
+  setInterval(() => { if (document.visibilityState === 'visible') loadToday().catch(() => {}); flush(); }, 30000);
+  setInterval(() => { if (document.visibilityState === 'visible') loadAll().catch(() => {}); }, 300000);
 }
 
 async function startCam(id) {
@@ -189,140 +196,117 @@ async function startCam(id) {
   const s = await navigator.mediaDevices.getUserMedia({ video: id ? { deviceId: { exact: id } } : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: false });
   v.srcObject = s; await v.play();
   const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
-  $('cam').innerHTML = cams.map((c, i) => '<option value="' + c.deviceId + '"' + (c.deviceId === (id || s.getVideoTracks()[0].getSettings().deviceId) ? ' selected' : '') + '>' + (c.label || 'กล้อง ' + (i + 1)) + '</option>').join('');
+  const cur = id || s.getVideoTracks()[0].getSettings().deviceId;
+  $('cam').innerHTML = cams.map((c, i) => '<option value="' + c.deviceId + '"' + (c.deviceId === cur ? ' selected' : '') + '>' + esc(c.label || 'กล้อง ' + (i + 1)) + '</option>').join('');
 }
 $('cam').onchange = e => { store.set('cam', e.target.value); startCam(e.target.value); };
 
-async function loadFaces() {
-  status('กำลังโหลดรายชื่อ…');
+async function loadAll() {
   courses = (await api({ action: 'courses' })).courses;
   if (!courses.some(c => c.id === kcourse)) kcourse = courses.length ? courses[0].id : '';
   store.set('kcourse', kcourse);
   const c = courses.find(x => x.id === kcourse);
   sections = c ? c.sections : [];
   if (ksec !== 'all' && !sections.some(x => x.id === ksec)) ksec = 'all';
-  if (c) { const r = await api({ action: 'roster', course_id: kcourse }); faces = r.faces; students = r.students; allFaces = r.allFaces; }
-  else { faces = []; students = []; status('ยังไม่มีรายวิชาที่เปิดอยู่ เพิ่มได้ในหน้าอาจารย์'); }
-  $('course').textContent = c ? (c.code ? c.code + ' ' : '') + c.name + ' · ' + c.term : 'เช็คชื่อด้วยใบหน้า';
-  buildMatcher(); drawSecs();
+  if (c) { students = (await api({ action: 'roster', course_id: kcourse })).students; }
+  else { students = []; status('ยังไม่มีรายวิชาที่เปิดอยู่ เพิ่มได้ในหน้าอาจารย์'); }
+  $('course').textContent = c ? (c.code ? c.code + ' ' : '') + c.name + ' · ' + c.term : 'เช็คชื่อ';
+  drawPills();
+  await loadToday();
+  status('พร้อมสแกน');
 }
+async function loadToday() { if (!kcourse) return; const t = await api({ action: 'today', course_id: kcourse }); today = { in: t.in, out: t.out }; drawCount(); drawMiss(); }
 
-function buildMatcher() {
-  const use = faces.filter(x => ksec === 'all' || x.section === ksec);
-  matcher = use.length ? new faceapi.FaceMatcher(use.map(x => new faceapi.LabeledFaceDescriptors(x.id, [new Float32Array(x.d)])), threshold) : null;
-  const inSec = students.filter(x => ksec === 'all' || x.section === ksec);
-  $('who').innerHTML = inSec.map(x => '<option value="' + x.id + '">' + (x.hasFace ? '✓ ' : '') + x.id + ' ' + x.name + '</option>').join('');
-  status('พร้อม · ลงทะเบียนแล้ว ' + use.length + '/' + inSec.length + ' คน');
+const inSec = () => students.filter(x => ksec === 'all' || x.section === ksec);
+const nameOf = id => (students.find(s => s.id === String(id)) || {}).name || id;
+function drawCount() {
+  const ids = new Set(inSec().map(s => s.id)), arr = mode === 'IN' ? today.in : today.out;
+  $('count').textContent = arr.filter(id => ids.has(id)).length;
+  $('countof').textContent = 'จาก ' + ids.size + ' คน · ' + (mode === 'IN' ? 'เข้าเรียน' : 'ออก');
 }
-
-function drawSecs() {
-  $('kcourses').innerHTML = courses.map(c => '<button class="pill' + (c.id === kcourse ? ' on' : '') + '" data-kc="' + c.id + '">' + c.name + '</button>').join('') || '<span class="mute">ยังไม่มีรายวิชา</span>';
-  $('kcourses').querySelectorAll('[data-kc]').forEach(b => b.onclick = () => { if (b.dataset.kc === kcourse) return; kcourse = b.dataset.kc; ksec = 'all'; store.set('kcourse', kcourse); store.set('ksec', ksec); streak = { id: null, n: 0 }; seen = {}; loadFaces().catch(e => status(e.message)); });
-  const name = ksec === 'all' ? 'ทุกเซก' : (sections.find(x => x.id === ksec) || {}).name;
-  $('secnow').textContent = name;
-  $('ksecs').innerHTML = [{ id: 'all', name: 'ทุกเซก' }].concat(sections).map(x => '<button class="pill' + (x.id === ksec ? ' on' : '') + '" data-k="' + x.id + '">' + x.name + '</button>').join('');
-  $('ksecs').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { ksec = b.dataset.k; store.set('ksec', ksec); streak = { id: null, n: 0 }; buildMatcher(); drawSecs(); });
+function drawPills() {
+  $('kcourses').innerHTML = courses.map(c => '<button class="pill' + (c.id === kcourse ? ' on' : '') + '" data-kc="' + c.id + '">' + esc(c.name) + '</button>').join('') || '<span class="mute">ยังไม่มีรายวิชา</span>';
+  $('kcourses').querySelectorAll('[data-kc]').forEach(b => b.onclick = () => { if (b.dataset.kc === kcourse) return; kcourse = b.dataset.kc; ksec = 'all'; store.set('kcourse', kcourse); store.set('ksec', ksec); loadAll().catch(e => status(e.message)); });
+  $('ksecs').innerHTML = [{ id: 'all', name: 'ทุกเซก' }].concat(sections).map(x => '<button class="pill' + (x.id === ksec ? ' on' : '') + '" data-k="' + esc(x.id) + '">' + esc(x.name) + '</button>').join('');
+  $('ksecs').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { ksec = b.dataset.k; store.set('ksec', ksec); drawPills(); drawCount(); drawMiss(); });
+  $('secnow').textContent = ksec === 'all' ? 'ทุกเซก' : (sections.find(x => x.id === ksec) || {}).name;
 }
-
-async function keepAwake() {
-  try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch (e) {}
-}
-document.addEventListener('visibilitychange', keepAwake);
-$('reload').onclick = () => loadFaces().then(() => { $('rerr').style.color = 'var(--in)'; $('rerr').textContent = 'โหลดรายชื่อใหม่แล้ว ' + students.length + ' คน'; }).catch(e => status(e.message));
-
 function status(t) { $('st').textContent = t; }
-const nameOf = id => (students.find(s => String(s.id) === String(id)) || {}).name || id;
 
-/* ---------- วนสแกน ---------- */
-const opts = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 });
-async function loop() {
+/* ---------- สแกน QR ---------- */
+function scanLoop() {
   const v = $('v'), c = $('c');
-  if (v.readyState >= 2 && !busyReg) {
-    const res = await faceapi.detectAllFaces(v, opts()).withFaceLandmarks().withFaceDescriptors();
-    draw(res);
-    if (matcher) {
-      const big = res.filter(r => r.detection.box.width > v.videoWidth * 0.12).sort((a, b) => b.detection.box.area - a.detection.box.area)[0];
-      if (big) {
-        const m = matcher.findBestMatch(big.descriptor);
-        if (m.label !== 'unknown') {
-          streak = streak.id === m.label ? { id: m.label, n: streak.n + 1 } : { id: m.label, n: 1 };
-          if (streak.n >= 3) { checkin(m.label, m.distance); streak = { id: null, n: 0 }; }
-        } else streak = { id: null, n: 0 };
-      }
-    }
+  if (v.readyState >= 2 && v.videoWidth) {
+    const w = 640, h = Math.round(v.videoHeight * w / v.videoWidth);
+    c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(v, 0, 0, w, h);
+    const r = jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+    if (r && r.data) onToken(r.data.trim());
   }
-  setTimeout(loop, 250);
+  setTimeout(scanLoop, 120);
 }
 
-function draw(res) {
-  const v = $('v'), c = $('c');
-  const W = c.clientWidth, H = c.clientHeight;
-  c.width = W; c.height = H;
-  const g = c.getContext('2d');
-  const k = Math.max(W / v.videoWidth, H / v.videoHeight), ox = (W - v.videoWidth * k) / 2, oy = (H - v.videoHeight * k) / 2;
-  res.forEach(r => {
-    const b = r.detection.box, m = matcher ? matcher.findBestMatch(r.descriptor) : { label: 'unknown' };
-    const known = m.label !== 'unknown', col = known ? (mode === 'IN' ? '#ff5a1f' : '#4d8dff') : 'rgba(255,255,255,.6)';
-    const x = b.x * k + ox, y = b.y * k + oy, w = b.width * k, h = b.height * k;
-    g.strokeStyle = col; g.lineWidth = 4; g.strokeRect(x, y, w, h);
-    g.save(); g.scale(-1, 1);
-    const label = known ? nameOf(m.label) : 'ไม่รู้จัก';
-    g.font = '600 18px Anuphan, sans-serif';
-    const tw = g.measureText(label).width + 16;
-    g.fillStyle = col; g.fillRect(-(x + w), y - 30, Math.max(tw, w), 28);
-    g.fillStyle = known ? '#0b0b0e' : '#000'; g.fillText(label, -(x + w) + 8, y - 10);
-    g.restore();
-  });
+function onToken(tok) {
+  const now = Date.now();
+  if (tok === lastTok && now - lastAt < 4000) return;
+  lastTok = tok; lastAt = now;
+  const m = tok.match(/^MJU1\.(\d+)\./);
+  if (!m) { show('', 'bad', 'QR นี้ไม่ใช่ QR เช็คชื่อ', 'ให้เปิดหน้าเช็คชื่อของระบบ'); beep(220); return; }
+  const sid = m[1];
+  if (recent[sid] && now - recent[sid] < 60000) return; // เพิ่งเช็คชื่อไป ยังยื่นค้างไว้ ไม่ต้องส่งซ้ำ
+  if (!students.some(s => s.id === sid)) { show(sid, 'bad', 'ไม่อยู่ในรายวิชานี้', 'เช็ครายวิชาที่เลือกด้านขวา'); beep(220); return; }
+  submit({ token: tok }, sid);
 }
 
-/* ---------- บันทึกเช็คชื่อ ---------- */
-async function checkin(id, dist) {
-  const key = kcourse + '|' + id + '|' + mode + '|' + new Date().toDateString();
-  const last = seen[key] || 0;
-  if (Date.now() - last < (mode === 'IN' ? 6 * 3600e3 : 3 * 60e3)) return;
-  seen[key] = Date.now();
-  const ts = new Date().toISOString();
-  show(nameOf(id), mode, '', 'กำลังบันทึก…');
-  beep(mode === 'IN' ? 880 : 660);
+$('sendcode').onclick = () => { const c = $('code').value.trim(); if (c.length !== 4) return show('', 'bad', 'รหัสต้องมี 4 ตัว', ''); submit({ code: c }, ''); $('code').value = ''; };
+$('code').onkeydown = e => { if (e.key === 'Enter') $('sendcode').click(); };
+
+async function submit(extra, sid) {
+  const m = mode, ts = new Date().toISOString();
+  show(sid, 'wait', sid ? nameOf(sid) : 'กำลังตรวจรหัส…', 'กำลังบันทึก…');
+  beep(m === 'IN' ? 880 : 660);
   try {
-    const r = await api({ action: 'log', course_id: kcourse, student_id: id, type: mode, distance: Math.round(dist * 1000) / 1000, ts: ts });
-    const msg = r.duplicate ? 'เช็คชื่อไปแล้วเมื่อ ' + r.time : (mode === 'IN' ? 'เข้าเรียน ' + r.time + ' · ' + r.status : 'ออก ' + r.time + (r.status === 'ออกก่อนเวลา' ? ' · ออกก่อนเวลา' : ''));
-    show(r.name, mode, id, msg);
-    addLog(r.name, mode, r.time);
+    const r = await api(Object.assign({ action: 'scan', course_id: kcourse, type: m }, extra));
+    if (!r.ok) { show(sid, 'bad', r.name || nameOf(sid) || 'ไม่ผ่าน', r.error); beep(220); return; }
+    const id = sid || (students.find(s => s.name === r.name) || {}).id;
+    const msg = r.duplicate ? 'เช็คชื่อไปแล้วเมื่อ ' + r.time : (m === 'IN' ? 'เข้าเรียน ' + r.time + ' · ' + r.status : 'ออก ' + r.time + (r.status === 'ออกก่อนเวลา' ? ' · ออกก่อนเวลา' : ''));
+    show(id, m, r.name, msg);
+    addLog(r.name, m, r.time);
+    if (id) recent[id] = Date.now();
+    if (id) { const a = m === 'IN' ? today.in : today.out; if (a.indexOf(id) < 0) a.push(id); drawCount(); drawMiss(); }
   } catch (e) {
-    queue.push({ course_id: kcourse, student_id: id, type: mode, distance: dist, ts: ts }); store.set('queue', queue);
-    show(nameOf(id), mode, id, 'บันทึกไว้ในเครื่อง จะส่งเมื่อเน็ตกลับมา');
-    addLog(nameOf(id), mode, new Date().toTimeString().slice(0, 5));
+    if (!extra.token) { show('', 'bad', 'ส่งรหัสไม่ได้', e.message); return; }
+    queue.push(Object.assign({ action: 'scan', course_id: kcourse, type: m, ts: ts }, extra)); store.set('queue', queue);
+    show(sid, m, nameOf(sid), 'เน็ตหลุด เก็บไว้ในเครื่องแล้ว จะส่งให้เอง');
+    $('qn').textContent = '(รอส่ง ' + queue.length + ')';
   }
-  $('qn').textContent = queue.length ? '(รอส่ง ' + queue.length + ')' : '';
 }
 
 async function flush() {
   if (!queue.length || !cfg) return;
   const left = [];
-  for (const q of queue) { try { await api(Object.assign({ action: 'log' }, q)); } catch (e) { left.push(q); } }
+  for (const q of queue) { try { await api(q); } catch (e) { left.push(q); } }
   queue = left; store.set('queue', queue);
   $('qn').textContent = queue.length ? '(รอส่ง ' + queue.length + ')' : '';
 }
 
 let banT;
-function show(name, m, id, msg) {
+function show(id, kind, name, msg) {
   const b = $('ban');
-  $('bsub').textContent = (m === 'IN' ? 'เข้าเรียน' : 'ออก') + (id ? ' · ' + id : '');
-  $('bname').textContent = name; $('bmsg').textContent = msg;
-  b.style.borderLeft = '8px solid ' + (m === 'IN' ? 'var(--in)' : 'var(--out)');
+  $('bsub').textContent = (kind === 'IN' ? 'เข้าเรียน' : kind === 'OUT' ? 'ออก' : kind === 'bad' ? 'ไม่ผ่าน' : 'สแกนแล้ว') + (id ? ' · ' + id : '');
+  $('bname').textContent = name || ''; $('bmsg').textContent = msg || '';
+  b.style.borderLeftColor = kind === 'bad' ? 'var(--bad)' : kind === 'OUT' ? 'var(--out)' : 'var(--in)';
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); $('word').style.visibility = 'hidden';
-  clearTimeout(banT); banT = setTimeout(() => { b.classList.remove('show'); $('word').style.visibility = ''; }, 3500);
+  clearTimeout(banT); banT = setTimeout(() => { b.classList.remove('show'); $('word').style.visibility = ''; }, kind === 'bad' ? 5000 : 3000);
 }
-
 function addLog(name, m, t) {
   const li = document.createElement('li');
-  li.innerHTML = '<span></span><span><span class="tag t-' + m + '">' + (m === 'IN' ? 'เข้า' : 'ออก') + '</span> ' + t + '</span>';
+  li.innerHTML = '<span></span><span><span class="tag t-' + m + '">' + (m === 'IN' ? 'เข้า' : 'ออก') + '</span> ' + esc(t) + '</span>';
   li.firstChild.textContent = name;
   $('log').prepend(li);
   while ($('log').children.length > 60) $('log').lastChild.remove();
 }
-
 let ac;
 function beep(f) {
   try { ac = ac || new AudioContext(); const o = ac.createOscillator(), g = ac.createGain();
@@ -330,56 +314,50 @@ function beep(f) {
     o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + .25); } catch (e) {}
 }
 
-/* ---------- ลงทะเบียนใบหน้า ---------- */
-$('cap').onclick = async () => {
-  const id = $('who').value;
-  $('rerr').style.color = ''; $('rerr').textContent = '';
-  if (typeof faceapi === 'undefined' || !faceapi.nets.faceRecognitionNet.isLoaded) return $('rerr').textContent = 'โมเดลจำหน้ายังโหลดไม่เสร็จ รอให้มุมซ้ายบนของกล้องขึ้นคำว่า พร้อม ก่อน ถ้าค้างนานให้รีเฟรชหน้า';
-  if (!$('v').srcObject || $('v').readyState < 2) return $('rerr').textContent = 'กล้องยังไม่ทำงาน กดอนุญาตให้ใช้กล้องที่แถบด้านบนของเบราว์เซอร์ แล้วรีเฟรชหน้า';
-  if (!courses.length) return $('rerr').textContent = 'ยังไม่มีรายวิชาที่เปิดอยู่ สร้างรายวิชาในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่';
-  if (!id) return $('rerr').textContent = 'ยังไม่มีชื่อนักศึกษาให้เลือก เพิ่มรายชื่อในหน้าอาจารย์ก่อน แล้วกดแท็บตั้งค่า > โหลดรายชื่อใบหน้าใหม่ (ถ้าเลือกเซกไว้ ลองกดทุกเซก)';
-  if (busyReg) return;
-  if (!$('consent').checked) return $('rerr').textContent = 'ต้องติ๊กยืนยันความยินยอมก่อน';
-  busyReg = true; $('cap').disabled = true;
-  const got = [];
-  const t0 = Date.now();
-  while (got.length < 8 && Date.now() - t0 < 15000) {
-    const r = await faceapi.detectAllFaces($('v'), opts()).withFaceLandmarks().withFaceDescriptors();
-    draw(r);
-    if (r.length === 1 && r[0].detection.score > 0.75) { got.push(r[0].descriptor); $('pb').style.width = (got.length / 8 * 100) + '%'; }
-    else if (r.length > 1) $('rerr').textContent = 'ให้มีหน้าเดียวในกล้อง';
-    await new Promise(z => setTimeout(z, 300));
-  }
-  busyReg = false; $('cap').disabled = false;
-  if (got.length < 5) { $('pb').style.width = 0; return $('rerr').textContent = got.length ? 'เก็บใบหน้าได้ไม่ครบ ลองใหม่ในที่แสงดีขึ้น และมองกล้องตรง ๆ' : 'กล้องมองไม่เห็นใบหน้าเลย ขยับเข้าใกล้กล้อง เปิดไฟให้สว่างขึ้น และให้มีคนเดียวในกล้อง'; }
-  const avg = Array.from({ length: 128 }, (_, i) => got.reduce((t, d) => t + d[i], 0) / got.length);
-  const clash = allFaces.filter(f => f.id !== id).map(f => ({ f: f, d: faceapi.euclideanDistance(avg, f.d) })).sort((a, b) => a.d - b.d)[0];
-  if (clash && clash.d < 0.4 && !$('cap').dataset.force) {
-    $('cap').dataset.force = 1;
-    $('pb').style.width = 0;
-    return $('rerr').textContent = 'หน้านี้คล้ายนักศึกษารหัส ' + clash.f.id + ' มาก ถ้าแน่ใจว่าคนละคนให้กดเก็บอีกครั้ง';
-  }
-  delete $('cap').dataset.force;
-  try {
-    const r = await api({ action: 'register', student_id: id, descriptor: avg, consent: true });
-    $('rerr').style.color = 'var(--in)'; $('rerr').textContent = 'ลงทะเบียน ' + r.name + ' เรียบร้อย';
-    setTimeout(() => { $('rerr').style.color = ''; $('rerr').textContent = ''; $('pb').style.width = 0; }, 3000);
-    $('consent').checked = false;
-    await loadFaces();
-  } catch (e) { $('rerr').textContent = e.message; }
+/* ---------- ไม่มีมือถือ ---------- */
+function drawMiss() {
+  const done = new Set(mode === 'IN' ? today.in : today.out), q = $('q').value.trim().toLowerCase();
+  const list = inSec().filter(s => !done.has(s.id) && (!q || s.id.indexOf(q) >= 0 || s.name.toLowerCase().indexOf(q) >= 0));
+  $('miss').innerHTML = list.length ? list.slice(0, 200).map(s => '<li><span><b>' + esc(s.name) + '</b><br><span class="mute">' + esc(s.id) + '</span></span><button data-man="' + esc(s.id) + '">ลงชื่อ</button></li>').join('') : '<li class="mute">เช็คชื่อครบแล้ว</li>';
+  $('miss').querySelectorAll('[data-man]').forEach(b => b.onclick = async () => {
+    if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'ยืนยัน'; b.style.background = 'var(--in)'; b.style.color = '#160600'; return; }
+    b.disabled = true;
+    try {
+      const r = await api({ action: 'log', course_id: kcourse, student_id: b.dataset.man, type: mode, source: 'manual' });
+      show(b.dataset.man, mode, r.name, (r.duplicate ? 'เช็คชื่อไปแล้ว ' : 'ลงชื่อแล้ว ') + r.time); addLog(r.name, mode, r.time);
+      (mode === 'IN' ? today.in : today.out).push(b.dataset.man); drawCount(); drawMiss();
+    } catch (e) { b.disabled = false; show(b.dataset.man, 'bad', nameOf(b.dataset.man), e.message); }
+  });
+}
+$('q').oninput = drawMiss;
+
+/* ---------- สุ่มขานชื่อ ---------- */
+$('rollgo').onclick = () => {
+  const ids = new Set(inSec().map(s => s.id)), pool = today.in.filter(id => ids.has(id));
+  const n = Math.min(+$('rolln').value, pool.length);
+  if (!n) return $('rollout').innerHTML = '<span class="mute">ยังไม่มีคนเช็คชื่อในเซกนี้</span>';
+  const pick = pool.slice().sort(() => Math.random() - .5).slice(0, n);
+  $('rollout').innerHTML = pick.map(id => '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>' + esc(nameOf(id)) + '<br><span class="mute" style="font-size:13px;font-weight:400">' + esc(id) + '</span></span><button data-absent="' + esc(id) + '" style="font-size:13px;min-height:38px">ไม่อยู่</button></div>').join('');
+  $('rollout').querySelectorAll('[data-absent]').forEach(b => b.onclick = async () => {
+    if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'ยืนยันไม่อยู่'; b.style.background = 'var(--bad)'; return; }
+    b.disabled = true;
+    try { await api({ action: 'unlog', course_id: kcourse, student_id: b.dataset.absent }); b.textContent = 'ลบการเช็คชื่อแล้ว'; today.in = today.in.filter(x => x !== b.dataset.absent); drawCount(); drawMiss(); }
+    catch (e) { b.disabled = false; b.textContent = e.message; }
+  });
 };
 
-/* ---------- UI ---------- */
-function setMode(m) { mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); streak = { id: null, n: 0 }; }
+/* ---------- อื่น ๆ ---------- */
+function setMode(m) { mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); drawCount(); drawMiss(); }
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => setMode(b.dataset.m));
 document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === 'i' || e.key === 'I') setMode('IN'); if (e.key === 'o' || e.key === 'O') setMode('OUT'); });
 document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
-  ['scan', 'reg', 'cfg'].forEach(t => $('p-' + t).hidden = t !== b.dataset.t);
+  ['scan', 'list', 'roll', 'cfg'].forEach(t => $('p-' + t).hidden = t !== b.dataset.t);
+  if (b.dataset.t === 'list') loadToday().catch(() => {});
 });
-$('thr').value = threshold; $('thrv').textContent = threshold;
-$('thr').oninput = e => { threshold = +e.target.value; $('thrv').textContent = threshold; store.set('thr', threshold); if (faces.length) buildMatcher(); };
-$('fs').onclick = () => { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); };
+$('reload').onclick = () => loadAll().then(() => { $('cerr').style.color = 'var(--in)'; $('cerr').textContent = 'โหลดรายชื่อใหม่แล้ว ' + students.length + ' คน'; }).catch(e => $('cerr').textContent = e.message);
+async function keepAwake() { try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', keepAwake);
 
 if (cfg && cfg.url) boot(); else { $('setup').hidden = false; }
 }
