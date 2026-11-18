@@ -271,7 +271,8 @@ async function submit(extra, sid) {
     if (!r.ok) { show(sid, 'bad', r.name || nameOf(sid) || 'ไม่ผ่าน', r.error); beep(220); return; }
     const id = sid || (students.find(s => s.name === r.name) || {}).id;
     const msg = r.duplicate ? 'เช็คชื่อไปแล้วเมื่อ ' + r.time : (m === 'IN' ? 'เข้าเรียน ' + r.time + ' · ' + r.status : 'ออก ' + r.time + (r.status === 'ออกก่อนเวลา' ? ' · ออกก่อนเวลา' : ''));
-    show(id, m, r.name, msg);
+    if (r.first) { show(id, 'first', r.name, 'สแกนครั้งแรก ดูหน้าคนให้ตรงกับชื่อ · ' + msg); beep(520); }
+    else show(id, m, r.name, msg);
     addLog(r.name, m, r.time);
     if (id) recent[id] = Date.now();
     if (id) { const a = m === 'IN' ? today.in : today.out; if (a.indexOf(id) < 0) a.push(id); drawCount(); drawMiss(); }
@@ -294,11 +295,12 @@ async function flush() {
 let banT;
 function show(id, kind, name, msg) {
   const b = $('ban');
-  $('bsub').textContent = (kind === 'IN' ? 'เข้าเรียน' : kind === 'OUT' ? 'ออก' : kind === 'bad' ? 'ไม่ผ่าน' : 'สแกนแล้ว') + (id ? ' · ' + id : '');
+  $('bsub').textContent = (kind === 'IN' ? 'เข้าเรียน' : kind === 'OUT' ? 'ออก' : kind === 'bad' ? 'ไม่ผ่าน' : kind === 'first' ? 'ผูกมือถือครั้งแรก' : 'สแกนแล้ว') + (id ? ' · ' + id : '');
   $('bname').textContent = name || ''; $('bmsg').textContent = msg || '';
-  b.style.borderLeftColor = kind === 'bad' ? 'var(--bad)' : kind === 'OUT' ? 'var(--out)' : 'var(--in)';
+  b.style.borderLeftColor = kind === 'bad' ? 'var(--bad)' : kind === 'OUT' ? 'var(--out)' : kind === 'first' ? '#ffc400' : 'var(--in)';
+  b.style.background = kind === 'first' ? 'rgba(60,45,0,.85)' : '';
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); $('word').style.visibility = 'hidden';
-  clearTimeout(banT); banT = setTimeout(() => { b.classList.remove('show'); $('word').style.visibility = ''; }, kind === 'bad' ? 5000 : 3000);
+  clearTimeout(banT); banT = setTimeout(() => { b.classList.remove('show'); $('word').style.visibility = ''; }, kind === 'bad' || kind === 'first' ? 6000 : 3000);
 }
 function addLog(name, m, t) {
   const li = document.createElement('li');
