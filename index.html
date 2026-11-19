@@ -42,7 +42,8 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 .banner b{display:block;font-size:clamp(28px,4vw,48px);line-height:1.05;letter-spacing:-.02em}
 @keyframes pop{from{transform:translateY(12px);opacity:0}}
 @media(prefers-reduced-motion:reduce){.banner.show{animation:none}}
-.side{display:flex;flex-direction:column;gap:10px}
+.side{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 28px);overflow:auto}
+@media(min-width:901px){.app{height:100vh;min-height:0}.stage{min-height:0}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px}
 .mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mode button{font-size:20px;min-height:76px;border-radius:18px}
@@ -63,7 +64,7 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 .prog{height:8px;background:#24242a;border-radius:9px;overflow:hidden;margin-top:10px}.prog i{display:block;height:100%;width:0;background:var(--in);transition:width .2s}
 .setup{max-width:520px;margin:8vh auto;padding:16px}
 .err{color:var(--bad);font-size:14px;min-height:1em;margin-top:8px}
-@media(max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.stage{min-height:58vh}}
+@media(max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.stage{min-height:40vh}}
 
 .name{font-size:clamp(30px,4.5vw,56px);font-weight:600;line-height:1.05;letter-spacing:-.02em}
 .list{list-style:none;margin:8px 0 0;padding:0;max-height:46vh;overflow:auto}
@@ -71,6 +72,11 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 .list button{min-height:40px;padding:6px 14px;font-size:14px}
 .big{font-size:22px;letter-spacing:.2em;text-transform:uppercase;text-align:center}
 .roll{display:grid;gap:8px;margin-top:10px}.roll div{background:#24242a;border-radius:14px;padding:12px 14px;font-size:20px;font-weight:600}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:900px){.pad{grid-template-columns:repeat(8,1fr)}}
+.pad button{min-height:0;aspect-ratio:1;max-height:84px;border-radius:16px;padding:0;font-size:44px;line-height:1;font-weight:400}
+.pad button:active{background:var(--in)}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.pick .h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}.pick .h b{font-size:40px;line-height:1}.pick button{border-radius:14px;text-align:left;font-size:16px;padding:10px 12px;min-height:48px}.pick button span{display:block;font-size:12px;color:var(--mute);font-weight:400}
 .frame{position:absolute;inset:18% 26%;border:3px solid rgba(255,255,255,.75);border-radius:24px;z-index:1;pointer-events:none}
 </style>
 
@@ -112,9 +118,9 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
       <div class="pills" id="kcourses" style="margin-bottom:12px"></div>
       <div class="mute" style="margin-bottom:8px">เซกที่กำลังเรียน</div>
       <div class="pills" id="ksecs" style="margin-bottom:12px"></div>
-      <div class="mode"><button class="in on" data-m="IN">เข้าเรียน</button><button class="out" data-m="OUT">ออก</button></div>
-      <label for="code">กล้องอ่านไม่ได้ ให้พิมพ์รหัส 4 ตัวจากมือถือนักศึกษา</label>
-      <div style="display:flex;gap:8px"><input id="code" class="big" maxlength="4" autocomplete="off"><button id="sendcode" style="background:var(--in);color:#160600">ยืนยัน</button></div>
+      <div class="mute" style="margin-bottom:8px">สแกนไม่ผ่าน ให้นักศึกษากดรูปที่ขึ้นบนมือถือ แล้วแตะชื่อตัวเอง</div>
+      <div class="pad" id="pad"></div>
+      <div class="pick" id="pick" hidden></div>
       <h3 style="margin:16px 0 4px;font-size:16px">ล่าสุด <span class="mute" id="qn"></span></h3>
       <ul class="log" id="log"></ul>
     </div>
@@ -162,7 +168,7 @@ async function api(body) {
     if (/accounts\.google|ServiceLogin|signin/i.test(t)) throw new Error('Google ให้ล็อกอินก่อน แปลว่า Web App ยังไม่ได้ตั้งผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน"');
     throw new Error('Web App ตอบกลับมาไม่ถูกต้อง เช็คว่าลิงก์ลงท้ายด้วย /exec');
   }
-  if (!j.ok && !j.name) throw new Error(j.error || 'เชื่อมต่อไม่ได้');
+  if (!j.ok && !j.name && !j.choose) throw new Error(j.error || 'เชื่อมต่อไม่ได้');
   return j;
 }
 
@@ -222,7 +228,7 @@ const nameOf = id => (students.find(s => s.id === String(id)) || {}).name || id;
 function drawCount() {
   const ids = new Set(inSec().map(s => s.id)), arr = mode === 'IN' ? today.in : today.out;
   $('count').textContent = arr.filter(id => ids.has(id)).length;
-  $('countof').textContent = 'จาก ' + ids.size + ' คน · ' + (mode === 'IN' ? 'เข้าเรียน' : 'ออก');
+  $('countof').textContent = 'จาก ' + ids.size + ' คน เช็คชื่อแล้ว';
 }
 function drawPills() {
   $('kcourses').innerHTML = courses.map(c => '<button class="pill' + (c.id === kcourse ? ' on' : '') + '" data-kc="' + c.id + '">' + esc(c.name) + '</button>').join('') || '<span class="mute">ยังไม่มีรายวิชา</span>';
@@ -259,8 +265,19 @@ function onToken(tok) {
   submit({ token: tok }, sid);
 }
 
-$('sendcode').onclick = () => { const c = $('code').value.trim(); if (c.length !== 4) return show('', 'bad', 'รหัสต้องมี 4 ตัว', ''); submit({ code: c }, ''); $('code').value = ''; };
-$('code').onkeydown = e => { if (e.key === 'Enter') $('sendcode').click(); };
+const SYM = [['🍎','แอปเปิล'],['🍌','กล้วย'],['🍇','องุ่น'],['🍉','แตงโม'],['🐶','หมา'],['🐱','แมว'],['🐟','ปลา'],['🐢','เต่า'],['⭐','ดาว'],['🌙','พระจันทร์'],['☀️','พระอาทิตย์'],['⚡','สายฟ้า'],['🚗','รถ'],['✈️','เครื่องบิน'],['⚽','ลูกบอล'],['🎈','ลูกโป่ง']];
+$('pad').innerHTML = SYM.map((s, i) => '<button data-s="' + i.toString(16) + '" aria-label="' + s[1] + '">' + s[0] + '</button>').join('');
+$('pad').querySelectorAll('[data-s]').forEach(b => b.onclick = () => { submit({ code: b.dataset.s, section: ksec }, ''); });
+function choose(code, list) {
+  const s = SYM[parseInt(code, 16)] || ['?', ''];
+  $('pick').hidden = false; $('pad').hidden = true;
+  $('pick').innerHTML = '<div class="h"><span class="mute">มือถือที่ขึ้นรูป' + s[1] + ' แตะชื่อตัวเอง</span><b>' + s[0] + '</b></div>' +
+    list.map(p => '<button data-p="' + esc(p.id) + '">' + esc(p.name) + '<span>' + esc(p.id) + '</span></button>').join('') +
+    '<button data-p="" style="grid-column:1/-1;text-align:center">ไม่มีชื่อ กลับไปกดรูปใหม่</button>';
+  $('pick').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { $('pick').hidden = true; $('pad').hidden = false; if (b.dataset.p) submit({ code: code, section: ksec, pick: b.dataset.p }, b.dataset.p); });
+  $('pick').scrollIntoView({ block: 'nearest' });
+}
+
 
 async function submit(extra, sid) {
   const m = mode, ts = new Date().toISOString();
@@ -268,6 +285,7 @@ async function submit(extra, sid) {
   beep(m === 'IN' ? 880 : 660);
   try {
     const r = await api(Object.assign({ action: 'scan', course_id: kcourse, type: m }, extra));
+    if (!r.ok && r.choose) { show('', 'wait', 'แตะชื่อตัวเองด้านขวา', ''); choose(extra.code, r.choose); return; }
     if (!r.ok) { show(sid, 'bad', r.name || nameOf(sid) || 'ไม่ผ่าน', r.error); beep(220); return; }
     const id = sid || (students.find(s => s.name === r.name) || {}).id;
     const msg = r.duplicate ? 'เช็คชื่อไปแล้วเมื่อ ' + r.time : (m === 'IN' ? 'เข้าเรียน ' + r.time + ' · ' + r.status : 'ออก ' + r.time + (r.status === 'ออกก่อนเวลา' ? ' · ออกก่อนเวลา' : ''));
@@ -277,7 +295,7 @@ async function submit(extra, sid) {
     if (id) recent[id] = Date.now();
     if (id) { const a = m === 'IN' ? today.in : today.out; if (a.indexOf(id) < 0) a.push(id); drawCount(); drawMiss(); }
   } catch (e) {
-    if (!extra.token) { show('', 'bad', 'ส่งรหัสไม่ได้', e.message); return; }
+    if (!extra.token) { show('', 'bad', 'ส่งไม่ได้ ลองกดรูปใหม่', e.message); return; }
     queue.push(Object.assign({ action: 'scan', course_id: kcourse, type: m, ts: ts }, extra)); store.set('queue', queue);
     show(sid, m, nameOf(sid), 'เน็ตหลุด เก็บไว้ในเครื่องแล้ว จะส่งให้เอง');
     $('qn').textContent = '(รอส่ง ' + queue.length + ')';
@@ -349,9 +367,6 @@ $('rollgo').onclick = () => {
 };
 
 /* ---------- อื่น ๆ ---------- */
-function setMode(m) { mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); drawCount(); drawMiss(); }
-document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => setMode(b.dataset.m));
-document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === 'i' || e.key === 'I') setMode('IN'); if (e.key === 'o' || e.key === 'O') setMode('OUT'); });
 document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
   ['scan', 'list', 'roll', 'cfg'].forEach(t => $('p-' + t).hidden = t !== b.dataset.t);
