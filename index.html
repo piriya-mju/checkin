@@ -6,6 +6,7 @@
 <title>เช็คชื่อ CMT·MJU</title>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
 /*
 VOICE   studio kiosk, black stage, one orange signal
@@ -77,11 +78,36 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 .pad button{min-height:0;aspect-ratio:1;max-height:84px;border-radius:16px;padding:0;font-size:44px;line-height:1;font-weight:400}
 .pad button:active{background:var(--in)}
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.pick .h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}.pick .h b{font-size:40px;line-height:1}.pick button{border-radius:14px;text-align:left;font-size:16px;padding:10px 12px;min-height:48px}.pick button span{display:block;font-size:12px;color:var(--mute);font-weight:400}
+#room{position:fixed;inset:0;z-index:80;background:#050506;display:grid;grid-template-columns:auto minmax(260px,1fr);gap:4vw;align-items:center;padding:4vh 4vw}
+#room .rq{background:#fff;border-radius:28px;padding:22px;width:min(82vh,58vw)}
+#room #rqr img{width:100%;height:auto;display:block;image-rendering:pixelated}
+#room .rbar{height:8px;background:#e8e6e1;border-radius:9px;margin-top:14px;overflow:hidden}#room .rbar i{display:block;height:100%;background:var(--in);transition:width .25s linear}
+#room .rclose{display:inline-block;margin-top:8px;padding:6px 14px;border-radius:99px;background:#1d1d22;color:#fff;font-size:16px}
+#room .rshut{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#141414;text-align:center}#room .rshut b{font-size:clamp(28px,4vw,52px)}#room .rshut span{font-size:20px;color:#666}
+#room h1{font-size:clamp(44px,6vw,92px);line-height:1;margin:6px 0 12px}
+#room .rn{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}#room .rn b{font-size:clamp(56px,8vw,120px);line-height:1;color:var(--in)}
+#room ul{list-style:none;margin:0 0 22px;padding:0;font-size:20px}#room li{padding:6px 0;border-bottom:1px solid #1d1d22;animation:fi .4s}
+@keyframes fi{from{opacity:0;transform:translateY(-6px)}}
+#room .ghost{background:#1d1d22;color:#fff}
+@media(max-width:800px){#room{grid-template-columns:1fr;text-align:center;align-content:center}#room .rq{width:min(88vw,60vh);margin:0 auto}#room .rn{justify-content:center}#room ul{display:none}}
 .frame{position:absolute;inset:18% 26%;border:3px solid rgba(255,255,255,.75);border-radius:24px;z-index:1;pointer-events:none}
 </style>
 
 </head>
 <body>
+<div id="room" hidden>
+  <div class="rq"><div id="rqr"></div><div class="rbar"><i id="rbar"></i></div></div>
+  <div class="ri">
+    <div class="mute" id="rcourse"></div>
+    <div class="rclose" id="rclose"></div>
+    <h1>สแกน <span class="serif">เช็คชื่อ</span></h1>
+    <p class="mute">เปิดกล้องมือถือ ส่องที่ QR แล้วกดลิงก์ที่ขึ้นมา QR เปลี่ยนใหม่ทุก 10 วินาที ถ่ายรูปส่งให้เพื่อนก็ใช้ไม่ได้</p>
+    <div class="rn"><b id="rcount">0</b><span id="rof">คน</span></div>
+    <ul id="rlast"></ul>
+    <button id="roomx" class="ghost">ปิดจอ QR</button>
+  </div>
+</div>
+
 
 <div class="setup" id="setup" hidden>
   <div class="panel">
@@ -118,6 +144,7 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
       <div class="pills" id="kcourses" style="margin-bottom:12px"></div>
       <div class="mute" style="margin-bottom:8px">เซกที่กำลังเรียน</div>
       <div class="pills" id="ksecs" style="margin-bottom:12px"></div>
+      <button id="roomgo" style="width:100%;background:var(--in);color:#160600;font-size:18px;padding:16px;margin-bottom:14px">ขึ้น QR ให้นักศึกษาสแกนเอง</button>
       <div class="mute" style="margin-bottom:8px">สแกนไม่ผ่าน ให้นักศึกษากดรูปที่ขึ้นบนมือถือ แล้วแตะชื่อตัวเอง</div>
       <div class="pad" id="pad"></div>
       <div class="pick" id="pick" hidden></div>
@@ -367,6 +394,51 @@ $('rollgo').onclick = () => {
 };
 
 /* ---------- อื่น ๆ ---------- */
+
+// ---------- จอ QR ให้นักศึกษาสแกนเอง ----------
+let roomT = null, roomTodayT = null, roomSeen = [];
+async function roomTick() {
+  clearTimeout(roomT);
+  if ($('room').hidden) return;
+  try {
+    const r = await api({ action: 'room', course_id: kcourse, section: ksec });
+    $('rclose').textContent = r.closeAt ? 'ปิดรับเช็คชื่อ ' + r.closeAt + ' น.' : '';
+    if (r.closed) {
+      $('rqr').innerHTML = '<div class="rshut"><b>ปิดรับเช็คชื่อแล้ว</b><span>ตั้งแต่ ' + esc(r.closeAt) + ' น.</span></div>';
+      clearInterval(roomTick.b); $('rbar').style.width = '0%';
+      roomT = setTimeout(roomTick, 60000); return;
+    }
+    const base = cfg.url.split('?')[0];
+    const q = qrcode(0, 'L'); q.addData(base + '?ci=' + encodeURIComponent(r.token)); q.make();
+    $('rqr').innerHTML = q.createImgTag(10, 0);
+    const total = r.ms; let left = r.ms; const bar = $('rbar');
+    bar.style.transition = 'none'; bar.style.width = '100%';
+    clearInterval(roomTick.b); roomTick.b = setInterval(() => { left -= 250; bar.style.transition = 'width .25s linear'; bar.style.width = Math.max(0, left / 10000 * 100) + '%'; }, 250);
+    roomT = setTimeout(roomTick, total + 150);
+  } catch (e) { $('rqr').innerHTML = '<div style="color:#b3261e;padding:30px;text-align:center">' + esc(e.message) + '</div>'; roomT = setTimeout(roomTick, 5000); }
+}
+async function roomToday() {
+  clearTimeout(roomTodayT);
+  if ($('room').hidden) return;
+  try { await loadToday(); } catch (e) {}
+  const ids = new Set(inSec().map(s => s.id)), arr = today.in.filter(id => ids.has(id));
+  $('rcount').textContent = arr.length; $('rof').textContent = 'จาก ' + ids.size + ' คน เช็คชื่อแล้ว';
+  const fresh = arr.filter(id => roomSeen.indexOf(id) < 0); roomSeen = arr.slice();
+  const nm = id => (students.find(s => s.id === id) || {}).name || id;
+  $('rlast').innerHTML = arr.slice(-7).reverse().map(id => '<li>' + esc(nm(id)) + '</li>').join('');
+  if (fresh.length && arr.length > fresh.length) try { navigator.vibrate && navigator.vibrate(40); } catch (e) {}
+  roomTodayT = setTimeout(roomToday, 4000);
+}
+$('roomgo').onclick = () => {
+  if (!kcourse) return status('เลือกรายวิชาก่อน');
+  const c = courses.find(x => x.id === kcourse), s = c && (c.sections || []).find(x => x.id === ksec);
+  $('rcourse').textContent = (c ? c.name : '') + ' · ' + (s ? s.name : 'ทุกเซก');
+  roomSeen = today.in.slice(); $('room').hidden = false;
+  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch (e) {}
+  roomTick(); roomToday();
+};
+$('roomx').onclick = () => { $('room').hidden = true; clearTimeout(roomT); clearTimeout(roomTodayT); clearInterval(roomTick.b); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} };
+
 document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
   ['scan', 'list', 'roll', 'cfg'].forEach(t => $('p-' + t).hidden = t !== b.dataset.t);
