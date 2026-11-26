@@ -127,10 +127,10 @@ html{color-scheme:only light}
 .camgo{display:block;width:100%;margin-top:14px;background:#ff5a1f;color:#160600;border:0;font:inherit;font-weight:700;font-size:19px;border-radius:18px;padding:16px 18px;cursor:pointer}
 #ckcam{position:fixed;inset:0;z-index:60;background:#000}
 #ckcam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#ckcam .fr{position:absolute;left:50%;top:47%;width:min(74vw,62vh,420px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:28px;box-shadow:0 0 0 200vmax rgba(0,0,0,.55)}
+#ckcam .fr{position:absolute;left:3vw;right:3vw;top:calc(76px + env(safe-area-inset-top));bottom:calc(104px + env(safe-area-inset-bottom));border-radius:28px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35)}
 #ckcam .fr:before{content:"";position:absolute;inset:-3px;border-radius:30px;border:4px solid #ff5a1f;animation:ckp 1.6s ease-in-out infinite}
-#ckcam .fr:after{content:"";position:absolute;left:8%;right:8%;height:3px;top:10%;background:#ff5a1f;border-radius:3px;box-shadow:0 0 14px #ff5a1f;animation:cks 2s ease-in-out infinite alternate}
-@keyframes ckp{50%{opacity:.45}}@keyframes cks{to{top:88%}}
+#ckcam .fr:after{content:"";position:absolute;left:5%;right:5%;height:3px;top:6%;background:#ff5a1f;border-radius:3px;box-shadow:0 0 14px #ff5a1f;animation:cks 2s ease-in-out infinite alternate}
+@keyframes ckp{50%{opacity:.45}}@keyframes cks{to{top:94%}}
 #ckcam .cktop{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(16px + env(safe-area-inset-top)) 18px 16px;color:#fff;font-size:20px;z-index:2}
 #ckcam .cktop button{width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;cursor:pointer}
 #ckcam .ckbot{position:absolute;left:0;right:0;bottom:0;padding:24px 22px calc(34px + env(safe-area-inset-bottom));text-align:center;color:#fff;z-index:2}
@@ -228,7 +228,7 @@ if (typeof google === 'undefined' || !google.script) (function () {
       <video id="ckv" playsinline muted autoplay></video>
       <div class="cktop"><b>สแกนเช็คชื่อ</b><button id="ckx" aria-label="ปิดกล้อง">✕</button></div>
       <i class="fr"></i>
-      <div class="ckbot"><b id="ckmsg">ส่อง QR บนจอหน้าห้องให้อยู่ในกรอบ</b><span id="ckmsg2">เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร</span></div>
+      <div class="ckbot"><b id="ckmsg">ส่องกล้องไปที่ QR บนจอหน้าห้อง</b><span id="ckmsg2">เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร</span></div>
     </div>
     <canvas id="ckc" hidden></canvas>
     <button class="linkbtn" id="myqr" hidden>อาจารย์ให้ยื่น QR ส่วนตัว กดตรงนี้</button>
@@ -483,7 +483,7 @@ let camOn = false, camBusy = false, camLast = '', camLastAt = 0, camTs = 0;
 async function camStart() {
   if (camOn) return;
   $('ckcam').hidden = false; $('camgo').textContent = 'ปิดกล้อง'; $('ckcam').classList.remove('err');
-  $('ckmsg').textContent = 'ส่อง QR บนจอหน้าห้องให้อยู่ในกรอบ'; $('ckmsg2').textContent = 'เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร';
+  $('ckmsg').textContent = 'ส่องกล้องไปที่ QR บนจอหน้าห้อง'; $('ckmsg2').textContent = 'เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร';
   try {
     const v = $('ckv');
     v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
