@@ -247,7 +247,7 @@ function scanLoop() {
     c.width = w; c.height = h;
     const g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(v, 0, 0, w, h);
-    const r = jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+    const r = jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
     if (r && r.data) onToken(r.data.trim());
   }
   setTimeout(scanLoop, 120);
