@@ -106,7 +106,7 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
     <div class="rlink">ระบบนักศึกษา <b id="rlink"></b></div>
     <div class="rn"><b id="rcount">0</b><span id="rof">คน</span></div>
     <ul id="rlast"></ul>
-    <button id="roomx" class="ghost">ปิดจอ QR</button>
+    <button id="roomx" class="ghost">ปิดรับเช็คชื่อ (ปิดจอ QR)</button>
   </div>
 </div>
 
@@ -146,7 +146,7 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
       <div class="pills" id="kcourses" style="margin-bottom:12px"></div>
       <div class="mute" style="margin-bottom:8px">เซกที่กำลังเรียน</div>
       <div class="pills" id="ksecs" style="margin-bottom:12px"></div>
-      <button id="roomgo" style="width:100%;background:var(--in);color:#160600;font-size:18px;padding:16px;margin-bottom:14px">ขึ้น QR ให้นักศึกษาสแกนเอง</button>
+      <button id="roomgo" style="width:100%;background:var(--in);color:#160600;font-size:18px;padding:16px;margin-bottom:14px">เปิดรับเช็คชื่อ (ขึ้นจอ QR)</button>
       <div class="mute" style="margin-bottom:8px">สแกนไม่ผ่าน ให้นักศึกษากดรูปที่ขึ้นบนมือถือ แล้วแตะชื่อตัวเอง</div>
       <div class="pad" id="pad"></div>
       <div class="pick" id="pick" hidden></div>
@@ -406,7 +406,7 @@ async function roomFetch() {
   roomFetching = true;
   try {
     const r = await api({ action: 'room', course_id: kcourse, section: ksec });
-    $('rclose').textContent = r.closeAt ? 'ปิดรับเช็คชื่อ ' + r.closeAt + ' น.' : '';
+    $('rclose').textContent = 'กำลังรับเช็คชื่อ กดปิดจอ QR เพื่อปิดรับ';
     if (r.closed) {
       roomTok = []; roomShown = null;
       $('rqr').innerHTML = '<div class="rshut"><b>ปิดรับเช็คชื่อแล้ว</b><span>ตั้งแต่ ' + esc(r.closeAt) + ' น.</span></div>';
