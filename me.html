@@ -124,12 +124,18 @@ html{color-scheme:only light}
 #ck h2{margin:4px 0 4px;font-size:26px;letter-spacing:-.02em}#ck #cks{color:#bbb;font-size:14px}
 #ck .ckic{flex:0 0 auto;width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:36px}
 #ck.ok{background:#0f3d2a}#ck.ok .ckic{background:#1f8a5b}#ck.bad{background:#3d1212}#ck.bad .ckic{background:#b3261e}
-.camgo{display:inline-block;margin-top:12px;background:#ff5a1f;color:#160600;border:0;font:inherit;font-weight:600;border-radius:999px;padding:11px 18px;cursor:pointer}
-#ckcam{position:relative;margin-top:12px;border-radius:24px;overflow:hidden;background:#000;aspect-ratio:1;max-width:460px}
+.camgo{display:block;width:100%;margin-top:14px;background:#ff5a1f;color:#160600;border:0;font:inherit;font-weight:700;font-size:19px;border-radius:18px;padding:16px 18px;cursor:pointer}
+#ckcam{position:fixed;inset:0;z-index:60;background:#000}
 #ckcam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#ckcam .fr{position:absolute;inset:14%;border:3px solid #ff5a1f;border-radius:22px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);animation:ckp 1.6s ease-in-out infinite}
-@keyframes ckp{50%{opacity:.4}}
-#ckcam span{position:absolute;left:0;right:0;bottom:0;padding:12px;color:#fff;font-size:14px;text-align:center;background:linear-gradient(#0000,#000b)}#ck.ok .camgo{display:none}
+#ckcam .fr{position:absolute;left:50%;top:47%;width:min(74vw,62vh,420px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:28px;box-shadow:0 0 0 200vmax rgba(0,0,0,.55)}
+#ckcam .fr:before{content:"";position:absolute;inset:-3px;border-radius:30px;border:4px solid #ff5a1f;animation:ckp 1.6s ease-in-out infinite}
+#ckcam .fr:after{content:"";position:absolute;left:8%;right:8%;height:3px;top:10%;background:#ff5a1f;border-radius:3px;box-shadow:0 0 14px #ff5a1f;animation:cks 2s ease-in-out infinite alternate}
+@keyframes ckp{50%{opacity:.45}}@keyframes cks{to{top:88%}}
+#ckcam .cktop{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(16px + env(safe-area-inset-top)) 18px 16px;color:#fff;font-size:20px;z-index:2}
+#ckcam .cktop button{width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;cursor:pointer}
+#ckcam .ckbot{position:absolute;left:0;right:0;bottom:0;padding:24px 22px calc(34px + env(safe-area-inset-bottom));text-align:center;color:#fff;z-index:2}
+#ckcam .ckbot b{display:block;font-size:22px;margin-bottom:4px}#ckcam .ckbot span{color:#ddd;font-size:15px}
+#ckcam.err .ckbot b{color:#ff8a7a}
 .linkbtn{background:none;border:0;color:#777;font:inherit;font-size:13px;text-decoration:underline;padding:8px 2px;margin-top:4px;cursor:pointer}
 #qrnote{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:18px;padding:16px 20px;margin-top:24px;font-size:15px;color:#444;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 #qrbox .msg{color:#ffb4a0;font-size:14px;margin-top:10px}
@@ -215,10 +221,15 @@ if (typeof google === 'undefined' || !google.script) (function () {
         <div class="eyebrow" style="color:#bbb" id="ckeb">(เช็คชื่อ)</div>
         <h2 id="ckt">สแกน QR บนจอหน้าห้อง</h2>
         <div id="cks">กดปุ่มเปิดกล้อง แล้วส่องที่ QR บนจอของอาจารย์</div>
-        <button class="camgo" id="camgo">เปิดกล้องสแกนเช็คชื่อ</button>
+        <button class="camgo" id="camgo">📷 สแกนเช็คชื่อ</button>
       </div>
     </section>
-    <div id="ckcam" hidden><video id="ckv" playsinline muted autoplay></video><i class="fr"></i><span>ส่องที่ QR บนจอหน้าห้อง เจอแล้วเช็คชื่อให้เอง</span></div>
+    <div id="ckcam" hidden>
+      <video id="ckv" playsinline muted autoplay></video>
+      <div class="cktop"><b>สแกนเช็คชื่อ</b><button id="ckx" aria-label="ปิดกล้อง">✕</button></div>
+      <i class="fr"></i>
+      <div class="ckbot"><b id="ckmsg">ส่อง QR บนจอหน้าห้องให้อยู่ในกรอบ</b><span id="ckmsg2">เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร</span></div>
+    </div>
     <canvas id="ckc" hidden></canvas>
     <button class="linkbtn" id="myqr" hidden>อาจารย์ให้ยื่น QR ส่วนตัว กดตรงนี้</button>
     <section id="qrbox" aria-live="polite" hidden>
@@ -450,7 +461,7 @@ function submit() {
 
 // ---------- เช็คชื่อด้วยการสแกน QR บนจอหน้าห้อง ----------
 let claim = null, claimErr = '', claimCourse = '';
-function ckShow(cls, ic, eb, t, s) { $('ck').className = cls; $('ckic').textContent = ic; $('ckeb').textContent = eb; $('ckt').textContent = t; $('cks').textContent = s; }
+function ckShow(cls, ic, eb, t, s) { $('ckmsg').textContent = t; $('ckmsg2').textContent = s; $('ckcam').classList.toggle('err', cls === 'bad'); $('ck').className = cls; $('ckic').textContent = ic; $('ckeb').textContent = eb; $('ckt').textContent = t; $('cks').textContent = s; }
 function todayDone(d) {
   const t = new Date(), ds = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
   const r = ((d && d.attendance && d.attendance.days) || []).find(a => a.d === ds && a.in);
@@ -471,7 +482,8 @@ function afterLogin() {
 let camOn = false, camBusy = false, camLast = '', camLastAt = 0, camTs = 0;
 async function camStart() {
   if (camOn) return;
-  $('ckcam').hidden = false; $('camgo').textContent = 'ปิดกล้อง';
+  $('ckcam').hidden = false; $('camgo').textContent = 'ปิดกล้อง'; $('ckcam').classList.remove('err');
+  $('ckmsg').textContent = 'ส่อง QR บนจอหน้าห้องให้อยู่ในกรอบ'; $('ckmsg2').textContent = 'เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร';
   try {
     const v = $('ckv');
     v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
@@ -482,7 +494,7 @@ async function camStart() {
   }
 }
 function camStop() {
-  camOn = false; $('ckcam').hidden = true; $('camgo').textContent = 'เปิดกล้องสแกนเช็คชื่อ';
+  camOn = false; $('ckcam').hidden = true; $('camgo').textContent = '📷 สแกนเช็คชื่อ';
   const v = $('ckv'); if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
 }
 function camLoop(ts) {
@@ -513,6 +525,7 @@ function camCode(txt) {
   }).studentScan(cred[0], cred[1], txt);
 }
 $('camgo').onclick = () => camOn ? camStop() : camStart();
+$('ckx').onclick = () => camStop();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && camOn) camStop(); });
 $('myqr').onclick = () => { $('qrbox').hidden = !$('qrbox').hidden; $('myqr').textContent = $('qrbox').hidden ? 'อาจารย์ให้ยื่น QR ส่วนตัว กดตรงนี้' : 'ซ่อน QR ส่วนตัว'; if (!$('qrbox').hidden) qrLoop(); else clearTimeout(qrT); };
 
