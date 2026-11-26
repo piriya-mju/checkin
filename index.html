@@ -81,9 +81,10 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
 #room{position:fixed;inset:0;z-index:80;background:#050506;display:grid;grid-template-columns:auto minmax(260px,1fr);gap:4vw;align-items:center;padding:4vh 4vw}
 #room .rq{background:#fff;border-radius:28px;padding:22px;width:min(82vh,58vw)}
 #room #rqr img{width:100%;height:auto;display:block;image-rendering:pixelated}
-#room .rbar{height:8px;background:#e8e6e1;border-radius:9px;margin-top:14px;overflow:hidden}#room .rbar i{display:block;height:100%;background:var(--in);transition:width .25s linear}
+#room .rbar{height:8px;background:#e8e6e1;border-radius:9px;margin-top:14px;overflow:hidden}#room .rbar i{display:block;height:100%;background:var(--in)}
 #room .rclose{display:inline-block;margin-top:8px;padding:6px 14px;border-radius:99px;background:#1d1d22;color:#fff;font-size:16px}
 #room .rshut{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#141414;text-align:center}#room .rshut b{font-size:clamp(28px,4vw,52px)}#room .rshut span{font-size:20px;color:#666}
+#room .rlink{font-size:15px;color:#bbb;margin-top:6px}#room .rlink b{color:#fff;font-weight:600}
 #room h1{font-size:clamp(44px,6vw,92px);line-height:1;margin:6px 0 12px}
 #room .rn{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}#room .rn b{font-size:clamp(56px,8vw,120px);line-height:1;color:var(--in)}
 #room ul{list-style:none;margin:0 0 22px;padding:0;font-size:20px}#room li{padding:6px 0;border-bottom:1px solid #1d1d22;animation:fi .4s}
@@ -101,7 +102,8 @@ video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;t
     <div class="mute" id="rcourse"></div>
     <div class="rclose" id="rclose"></div>
     <h1>สแกน <span class="serif">เช็คชื่อ</span></h1>
-    <p class="mute">เปิดกล้องมือถือ ส่องที่ QR แล้วกดลิงก์ที่ขึ้นมา QR เปลี่ยนใหม่ทุก 10 วินาที ถ่ายรูปส่งให้เพื่อนก็ใช้ไม่ได้</p>
+    <p class="mute">เข้าระบบของตัวเองในมือถือ กล้องจะเปิดให้เอง แล้วส่องที่ QR นี้ QR เปลี่ยนตลอดเวลา ถ่ายรูปส่งให้เพื่อนก็ใช้ไม่ได้</p>
+    <div class="rlink">ระบบนักศึกษา <b id="rlink"></b></div>
     <div class="rn"><b id="rcount">0</b><span id="rof">คน</span></div>
     <ul id="rlast"></ul>
     <button id="roomx" class="ghost">ปิดจอ QR</button>
@@ -396,26 +398,37 @@ $('rollgo').onclick = () => {
 /* ---------- อื่น ๆ ---------- */
 
 // ---------- จอ QR ให้นักศึกษาสแกนเอง ----------
-let roomT = null, roomTodayT = null, roomSeen = [];
-async function roomTick() {
+let roomT = null, roomTodayT = null, roomSeen = [], roomTok = [], roomOff = 0, roomMs = 2000, roomShown = null, roomIv = null, roomFetching = false;
+// ดึงโค้ดล่วงหน้า 1 นาที แล้วเปลี่ยน QR เองทุก 2 วินาทีตามนาฬิกาของระบบ
+async function roomFetch() {
   clearTimeout(roomT);
-  if ($('room').hidden) return;
+  if ($('room').hidden || roomFetching) return;
+  roomFetching = true;
   try {
     const r = await api({ action: 'room', course_id: kcourse, section: ksec });
     $('rclose').textContent = r.closeAt ? 'ปิดรับเช็คชื่อ ' + r.closeAt + ' น.' : '';
     if (r.closed) {
+      roomTok = []; roomShown = null;
       $('rqr').innerHTML = '<div class="rshut"><b>ปิดรับเช็คชื่อแล้ว</b><span>ตั้งแต่ ' + esc(r.closeAt) + ' น.</span></div>';
-      clearInterval(roomTick.b); $('rbar').style.width = '0%';
-      roomT = setTimeout(roomTick, 60000); return;
+      roomT = setTimeout(roomFetch, 60000); return;
     }
-    const base = cfg.url.split('?')[0];
-    const q = qrcode(0, 'L'); q.addData(base + '?ci=' + encodeURIComponent(r.token)); q.make();
-    $('rqr').innerHTML = q.createImgTag(10, 0);
-    const total = r.ms; let left = r.ms; const bar = $('rbar');
-    bar.style.transition = 'none'; bar.style.width = '100%';
-    clearInterval(roomTick.b); roomTick.b = setInterval(() => { left -= 250; bar.style.transition = 'width .25s linear'; bar.style.width = Math.max(0, left / 10000 * 100) + '%'; }, 250);
-    roomT = setTimeout(roomTick, total + 150);
-  } catch (e) { $('rqr').innerHTML = '<div style="color:#b3261e;padding:30px;text-align:center">' + esc(e.message) + '</div>'; roomT = setTimeout(roomTick, 5000); }
+    roomTok = r.tokens; roomMs = r.ms; roomOff = r.now - Date.now();
+    roomT = setTimeout(roomFetch, 40000);
+  } catch (e) {
+    if (!roomTok.length) $('rqr').innerHTML = '<div class="rshut"><b>เชื่อมต่อไม่ได้</b><span>' + esc(e.message) + '</span></div>';
+    roomT = setTimeout(roomFetch, 5000);
+  } finally { roomFetching = false; }
+}
+function roomShow() {
+  if ($('room').hidden || !roomTok.length) return;
+  const t = Date.now() + roomOff, cur = Math.floor(t / roomMs), hit = roomTok.find(x => x[0] === cur);
+  $('rbar').style.width = (100 - (t % roomMs) / roomMs * 100) + '%';
+  if (!hit) { if (roomTok[roomTok.length - 1][0] < cur + 5) roomFetch(); return; }
+  if (roomShown === cur) return;
+  roomShown = cur;
+  const q = qrcode(0, 'L'); q.addData(location.origin + location.pathname.replace(/[^/]*$/, '') + 'me.html?ci=' + encodeURIComponent(hit[1])); q.make();
+  $('rqr').innerHTML = q.createImgTag(10, 0);
+  if (roomTok[roomTok.length - 1][0] - cur < 10) roomFetch();
 }
 async function roomToday() {
   clearTimeout(roomTodayT);
@@ -434,10 +447,12 @@ $('roomgo').onclick = () => {
   const c = courses.find(x => x.id === kcourse), s = c && (c.sections || []).find(x => x.id === ksec);
   $('rcourse').textContent = (c ? c.name : '') + ' · ' + (s ? s.name : 'ทุกเซก');
   roomSeen = today.in.slice(); $('room').hidden = false;
+  $('rlink').textContent = location.host + location.pathname.replace(/[^/]*$/, '') + 'me.html';
   try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch (e) {}
-  roomTick(); roomToday();
+  roomTok = []; roomShown = null; $('rqr').innerHTML = '<div class="rshut"><b>กำลังเตรียม QR</b></div>';
+  roomFetch(); roomToday(); clearInterval(roomIv); roomIv = setInterval(roomShow, 100);
 };
-$('roomx').onclick = () => { $('room').hidden = true; clearTimeout(roomT); clearTimeout(roomTodayT); clearInterval(roomTick.b); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} };
+$('roomx').onclick = () => { $('room').hidden = true; clearTimeout(roomT); clearTimeout(roomTodayT); clearInterval(roomIv); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} };
 
 document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));

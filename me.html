@@ -1,206 +1,543 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="only light">
-<meta name="theme-color" content="#050506">
-<title>เช็คชื่อ CMT·MJU</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<base target="_top">
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#050506;--ink:#f4f2ee;--mute:#9a9aa2;--in:#ff5a1f;--ok:#1f8a5b;--bad:#d93a2b;--sans:"Anuphan",system-ui,sans-serif;--serif:"Instrument Serif",Georgia,serif}
-*{box-sizing:border-box}[hidden]{display:none!important}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);-webkit-tap-highlight-color:transparent}
-.serif{font-family:var(--serif);font-style:italic;font-weight:400}
-button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:14px 22px;cursor:pointer;background:var(--ink);color:#111}
-button.acc{background:var(--in);color:#160600}button.ghost{background:rgba(255,255,255,.1);color:#fff}
-input{font:inherit;font-size:20px;width:100%;padding:14px 16px;border-radius:14px;border:1px solid #2a2a30;background:#121215;color:#fff;letter-spacing:.04em}
-a{color:#fff}
-/* เข้าสู่ระบบ */
-#login{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));position:relative;overflow:hidden}
-#login:before{content:"";position:absolute;width:520px;height:520px;right:-220px;top:-260px;background:radial-gradient(circle,#ff6a1a 0,rgba(255,106,26,.25) 35%,transparent 68%);pointer-events:none}
-#login h1{font-size:56px;line-height:1;margin:0 0 6px;position:relative}
-#login p{color:var(--mute);margin:0 0 24px;position:relative}
-#login label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
-#login .err{color:#ff8a7a;min-height:24px;margin-top:10px;font-size:14px}
-#login button{width:100%;margin-top:16px;font-size:18px}
-#login .small{font-size:14px;color:var(--mute);margin-top:22px;text-align:center}
-/* กล้อง */
-#cam{position:fixed;inset:0;background:#000}
-#cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#cam .top{position:absolute;left:0;right:0;top:0;padding:calc(14px + env(safe-area-inset-top)) 18px 40px;background:linear-gradient(#000c,#0000);display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:2}
-#cam .top b{font-size:18px;display:block}#cam .top span{font-size:13px;color:#ccc}
-#cam .top button{padding:8px 14px;font-size:13px}
-#cam .frame{position:absolute;left:50%;top:46%;width:min(72vw,360px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:28px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);z-index:1}
-#cam .frame:before{content:"";position:absolute;inset:0;border-radius:28px;border:3px solid var(--in);animation:pulse 1.6s ease-in-out infinite}
-@keyframes pulse{50%{opacity:.35}}
-#cam .bot{position:absolute;left:0;right:0;bottom:0;padding:40px 22px calc(22px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000d);text-align:center;z-index:2}
-#cam .bot h2{margin:0 0 4px;font-size:24px}#cam .bot p{margin:0;color:#ccc;font-size:14px}
-#toast{position:fixed;left:16px;right:16px;bottom:calc(120px + env(safe-area-inset-bottom));z-index:5;background:var(--bad);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;text-align:center;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
-#toast.on{opacity:1;transform:none}
-#busy{position:fixed;inset:0;z-index:4;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600}
-/* ผล */
-#done{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));background:var(--ok)}
-#done.bad{background:#5a1610}
-#done .ic{width:120px;height:120px;border-radius:36px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:72px;line-height:1;margin-bottom:22px}
-#done h1{margin:0;font-size:44px;line-height:1.1}#done .nm{font-size:22px;font-weight:600;margin-top:10px}
-#done .sub{color:#e5f3ec;margin-top:4px}#done.bad .sub{color:#f3d5d1}
-#done .time{font-size:64px;font-weight:700;margin-top:18px;letter-spacing:-.02em}
-#done .acts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin-top:28px}
-#done .acts a{display:block;text-decoration:none;border-radius:999px;padding:14px 22px;font-weight:600;background:rgba(255,255,255,.16)}
-#camerr{position:fixed;inset:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:32px 24px;gap:12px}
-#camerr h2{margin:0;font-size:28px}#camerr p{margin:0;color:var(--mute)}
+/*
+VOICE   editorial studio, calm white pages under one bold black hero
+IDEA    a design studio's project index, each assignment is a project card
+PICTURE black hero with an orange visor-glow, plus marks on a grid
+COLOUR  ink #0b0b0c, paper #fff, mist #f1f2f4, signal orange #ff5a1f
+TYPE    Inter Tight / Anuphan heavy, Instrument Serif italic accents
+*/
+:root{--ink:#0b0b0c;--paper:#fff;--mist:#f1f2f4;--line:#e6e6ea;--mute:#6e6e76;--acc:#ff5a1f;--ok:#14a05a;--bad:#e5341d;--warn:#b77900;
+--sans:"Inter Tight",Anuphan,system-ui,sans-serif;--serif:"Instrument Serif",Georgia,serif}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans);overflow-x:clip}
+.serif{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.01em}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:12px 22px;min-height:46px;cursor:pointer;background:var(--ink);color:#fff}
+button.light{background:var(--mist);color:var(--ink)}
+button.acc{background:var(--acc);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,.pcard:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+input[type=text],input[type=password]{width:100%;font:inherit;font-size:16px;padding:14px 18px;border:1.5px solid var(--line);border-radius:14px;background:#fff}
+input:focus{outline:none;border-color:var(--ink)}
+label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+.mute{color:var(--mute);font-size:14px}
+.eyebrow{font-size:13px;font-weight:500}
+
+/* hero */
+.hero{position:relative;background:#050506;color:#fff;overflow:hidden;padding:20px max(4vw,16px) 40px;min-height:420px;display:flex;flex-direction:column}
+.hero::before{content:"";position:absolute;inset:0;background:
+ radial-gradient(38% 22% at 62% 34%,rgba(255,90,31,.95),rgba(255,90,31,.25) 55%,transparent 75%),
+ radial-gradient(30% 60% at 62% 70%,rgba(255,255,255,.10),transparent 70%);filter:blur(6px)}
+.hero>*{position:relative}
+.bar{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:16px;font-size:13px;line-height:1.35;align-items:start}
+.logo{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:500;letter-spacing:.02em}
+.logo svg{width:26px;height:26px}
+.plus{display:grid;grid-template-columns:repeat(5,1fr);margin:44px 0 auto;font-size:13px;opacity:.85}
+.plus span{display:flex;align-items:center;gap:10px;padding:8px 0}
+.plus span::before{content:"+";font-size:22px;font-weight:300;line-height:1}
+.title{margin-top:40px}
+.title h1{margin:0;font-weight:600;font-size:clamp(56px,11vw,150px);line-height:.88;letter-spacing:-.04em}
+.title .serif{display:block;font-size:clamp(46px,8vw,118px);line-height:.95;text-align:right;margin-top:-.1em}
+.title p{max-width:340px;font-size:15px;line-height:1.45;margin:-56px 0 0}
+.gbtn{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);color:#fff;min-height:40px;padding:8px 16px;border-radius:10px;font-size:13px}
+
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(4vw,16px)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{background:var(--mist);border-radius:14px;padding:18px 16px;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
+.tile b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.head2{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin:52px 0 22px}
+.head2 h2{margin:0;font-size:22px;font-weight:600}
+.head2 sup{font-size:12px;margin-left:2px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:var(--mist);color:var(--ink);font-weight:500;font-size:14px;min-height:40px;padding:8px 16px}
+.pill.on{background:var(--ink);color:#fff}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px 18px;align-items:start;padding-bottom:80px}
+.pcard{cursor:pointer;border-radius:18px}
+.art{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#fff}
+.pcard:nth-child(3n+2) .art{aspect-ratio:1/1.15}
+.art .num{font-family:var(--serif);font-style:italic;font-size:clamp(70px,9vw,110px);line-height:1;letter-spacing:-.02em;text-shadow:0 10px 40px rgba(0,0,0,.25)}
+.art .glass{position:absolute;left:14px;right:14px;bottom:14px;border-radius:14px;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+.a0{background:radial-gradient(60% 60% at 30% 30%,#ffb347,#ff5a1f 55%,#9a2a00)}
+.a1{background:radial-gradient(55% 50% at 50% 45%,#2f6bff,#0b1d5c 60%,#050812)}
+.a2{background:radial-gradient(60% 60% at 70% 30%,#ffd1dc,#ff5c8a 50%,#7a1030)}
+.a3{background:radial-gradient(60% 60% at 40% 40%,#ff6b5a,#d4201a 55%,#4c0a07)}
+.meta{font-size:13px;color:var(--mute);margin:14px 0 4px}
+.pcard h3{margin:0;font-size:22px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+.ex{font-size:14px;color:var(--mute);margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chip{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.9);color:var(--ink);white-space:nowrap}
+.chip.ok{background:#dcf5e7;color:var(--ok)}.chip.bad{background:#ffe3de;color:var(--bad)}.chip.warn{background:#fff1cf;color:var(--warn)}
+
+/* login */
+.login{max-width:440px;margin:-90px auto 80px;background:#fff;border-radius:22px;padding:28px;box-shadow:0 30px 60px -20px rgba(0,0,0,.25);position:relative}
+.login h2{margin:0;font-size:28px;font-weight:600;letter-spacing:-.02em}
+.err{color:var(--bad);font-size:14px;min-height:1.2em;margin-top:10px}
+
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(5,5,6,.55);display:none;z-index:5;overflow:auto;padding:4vh 16px}
+.sheet.on{display:block}
+.panel{max-width:860px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden}
+.panel .top{background:var(--mist);padding:26px 28px 22px;position:relative}
+.panel .top h2{margin:6px 0 0;font-size:clamp(28px,4vw,44px);line-height:1.05;letter-spacing:-.03em;font-weight:600}
+.close{position:absolute;top:16px;right:16px;min-height:40px;padding:8px 14px;background:#fff;color:var(--ink)}
+.panel .body{padding:24px 28px 30px}
+.rub{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.rub li{background:var(--mist);border-radius:999px;padding:4px 12px;font-size:13px}
+.drop{border:1.5px dashed #c9c9cf;border-radius:18px;padding:26px;text-align:center;cursor:pointer;background:#fafafb}
+.drop.on{border-color:var(--acc);background:#fff4ef}
+.drop img{max-width:100%;max-height:380px;border-radius:12px;display:block;margin:0 auto 10px}
+.res{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;background:#0b0b0c;color:#fff;border-radius:18px;padding:22px;margin:18px 0}
+.big{font-size:72px;line-height:.9;font-weight:600;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.big small{font-size:20px;color:#9a9aa2;font-weight:500;letter-spacing:0}
+.crit .r{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}
+.bar2{height:6px;background:rgba(255,255,255,.14);border-radius:9px;overflow:hidden;margin:6px 0 4px}
+.bar2 i{display:block;height:100%;background:var(--acc)}
+.crit p{margin:0 0 12px;font-size:13px;color:#b9b9c0}
+.fb{background:var(--mist);border-radius:16px;padding:16px 18px;margin-top:10px;font-size:15px}
+.fb b{display:block;font-size:13px;margin-bottom:4px}
+.ov{position:fixed;inset:0;background:rgba(5,5,6,.82);display:none;align-items:center;justify-content:center;z-index:9;color:#fff;text-align:center;padding:24px}
+.ov.on{display:flex}
+.orb{width:84px;height:84px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 35% 35%,#ffb347,#ff5a1f 55%,#7a2000);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(.82);opacity:.7}}
+@media(prefers-reduced-motion:reduce){.orb{animation:none}}
+@media(max-width:760px){.bar{grid-template-columns:1fr auto}.bar .hide{display:none}.plus{grid-template-columns:repeat(2,1fr)}.plus span:nth-child(n+5){display:none}
+ .title p{margin:14px 0 0}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.res{grid-template-columns:1fr}.panel .top,.panel .body{padding-left:18px;padding-right:18px}}
+#qrbox{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:22px;align-items:center;background:var(--ink);color:#fff;border-radius:22px;padding:22px;margin-top:24px;position:relative}
+#qrbox .qr{background:#fff;border-radius:14px;padding:10px;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+#qrbox .qr svg,#qrbox .qr img{width:100%;height:auto;display:block;image-rendering:pixelated;filter:none!important}
+#qrbox .sym{display:flex;gap:14px;align-items:center;margin-top:14px;color:#bbb;font-size:13px;text-align:left}
+#qrbox .sym span{flex:0 0 auto;width:84px;height:84px;border-radius:18px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:58px;line-height:1}
+body.in .plus,body.in #lead{display:none}
+body.in .hero{min-height:0;padding-bottom:22px}
+body.in .title h1{font-size:clamp(40px,8vw,96px)}
+@media(max-width:600px){body.in .hero{padding-top:14px}body.in .title{margin-top:14px}#qrbox{gap:12px;padding:16px;margin-top:14px}#qrbox .qr{max-width:min(230px,58vw)}#qrbox .sym{justify-content:center}#qrbox h2{font-size:22px!important}}
+#qrbox .t{height:5px;background:rgba(255,255,255,.15);border-radius:9px;overflow:hidden;margin-top:14px}#qrbox .t i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
+[hidden]{display:none!important}
+html{color-scheme:only light}
+#ck{background:#0b0b0b;color:#fff;border-radius:24px;padding:22px 24px;display:flex;gap:18px;align-items:center;margin-top:24px;position:relative;overflow:hidden}
+#ck h2{margin:4px 0 4px;font-size:26px;letter-spacing:-.02em}#ck #cks{color:#bbb;font-size:14px}
+#ck .ckic{flex:0 0 auto;width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:36px}
+#ck.ok{background:#0f3d2a}#ck.ok .ckic{background:#1f8a5b}#ck.bad{background:#3d1212}#ck.bad .ckic{background:#b3261e}
+.camgo{display:inline-block;margin-top:12px;background:#ff5a1f;color:#160600;border:0;font:inherit;font-weight:600;border-radius:999px;padding:11px 18px;cursor:pointer}
+#ckcam{position:relative;margin-top:12px;border-radius:24px;overflow:hidden;background:#000;aspect-ratio:1;max-width:460px}
+#ckcam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#ckcam .fr{position:absolute;inset:14%;border:3px solid #ff5a1f;border-radius:22px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35);animation:ckp 1.6s ease-in-out infinite}
+@keyframes ckp{50%{opacity:.4}}
+#ckcam span{position:absolute;left:0;right:0;bottom:0;padding:12px;color:#fff;font-size:14px;text-align:center;background:linear-gradient(#0000,#000b)}#ck.ok .camgo{display:none}
+.linkbtn{background:none;border:0;color:#777;font:inherit;font-size:13px;text-decoration:underline;padding:8px 2px;margin-top:4px;cursor:pointer}
+#qrnote{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:18px;padding:16px 20px;margin-top:24px;font-size:15px;color:#444;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#qrbox .msg{color:#ffb4a0;font-size:14px;margin-top:10px}
+@media(max-width:600px){#qrbox{grid-template-columns:minmax(0,1fr);text-align:center;margin-top:18px}#qrbox .qr{max-width:280px;margin:0 auto;width:100%}}
+#sum{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;background:var(--mist);border-radius:18px;padding:20px 22px;margin-top:10px}
+#sum .gr{font-family:var(--serif);font-style:italic;font-size:72px;line-height:.9;min-width:110px;text-align:center}
+#sum .row2{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600;margin-top:10px}
+#sum .bar3{height:8px;background:#e1e1e6;border-radius:9px;overflow:hidden;margin-top:4px}#sum .bar3 i{display:block;height:100%;background:var(--acc)}
+@media(max-width:560px){#sum{grid-template-columns:minmax(0,1fr);text-align:center}#sum .row2{text-align:left}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+// เปิดจาก GitHub (นอก Apps Script) ให้คุยกับระบบผ่าน Web App URL แทน google.script.run
+if (typeof google === 'undefined' || !google.script) (function () {
+  var API = 'https://script.google.com/macros/s/AKfycbyfGNsQW_rHFXmyVxJYu3HwRNvSof8BFeAzJuUK5BOzr9ZVuilG_Dhu-wElczqW15Mt/exec';
+  function call(fn, args, ok, fail) {
+    fetch(API, { method: 'POST', body: JSON.stringify({ action: 'srun', fn: fn, args: args }) })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        var j; try { j = JSON.parse(t); } catch (e) { throw new Error('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง'); }
+        if (!j.ok) throw new Error(j.error || 'เกิดข้อผิดพลาด');
+        if (ok) ok(j.result);
+      })
+      .catch(function (e) { if (fail) fail(e instanceof Error ? e : new Error(String(e))); });
+  }
+  function runner() {
+    var ok, fail, p = new Proxy({}, { get: function (t, k) {
+      if (k === 'withSuccessHandler') return function (f) { ok = f; return p; };
+      if (k === 'withFailureHandler') return function (f) { fail = f; return p; };
+      return function () { call(k, [].slice.call(arguments), ok, fail); };
+    } });
+    return p;
+  }
+  window.google = { script: { url: { getLocation: function (cb) { var q = {}; new URLSearchParams(location.search).forEach(function (v, k) { q[k] = v; }); setTimeout(function () { cb({ parameter: q }); }, 0); } } } };
+  Object.defineProperty(window.google.script, 'run', { get: runner });
+})();
+</script>
+
 </head>
 <body>
+<header class="hero">
+  <div class="bar">
+    <div class="logo"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 1v24M1 13h24M4.5 4.5l17 17M21.5 4.5l-17 17"/></svg>CMT·MJU</div>
+    <div class="hide">รายวิชา<br><span id="course">ห้องเรียน CMT·MJU</span></div>
+    <div class="hide">ภาคเรียน<br><span id="term">—</span></div>
+    <div><button class="gbtn" id="out" hidden>ออกจากระบบ</button></div>
+  </div>
+  <div class="plus"><span>Courses</span><span>Upload</span><span>Review</span><span>Feedback</span><span>Grade</span></div>
+  <div class="title">
+    <h1 id="h1">ส่งงาน</h1>
+    <span class="serif" id="h2">Studio™</span>
+    <p id="lead">ส่งผลงานออกแบบเป็นไฟล์รูป แล้วกลับมาดูคะแนนและคอมเมนต์ได้ที่นี่</p>
+  </div>
+</header>
 
-<section id="login" hidden>
-  <div style="color:var(--mute);font-size:13px;letter-spacing:.12em;position:relative">CMT·MJU</div>
-  <h1>เช็ค<span class="serif" style="color:var(--in)">ชื่อ</span></h1>
-  <p>ใส่รหัสนักศึกษากับ PIN ครั้งเดียว ครั้งต่อไปเปิดมาเป็นกล้องเลย</p>
-  <label for="sid">รหัสนักศึกษา</label>
-  <input id="sid" inputmode="numeric" autocomplete="username">
-  <label for="pin">PIN 4 หลัก</label>
-  <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password">
-  <div class="err" id="lerr"></div>
-  <button class="acc" id="go">เข้าสู่ระบบ</button>
-  <div class="small">ยังไม่ได้สมัคร หรือจะส่งงาน <a id="sysl" href="#">เข้าหน้าระบบ</a></div>
-</section>
+<div class="wrap">
+  <section class="login" id="login">
+    <div class="eyebrow">(เข้าสู่ระบบ)</div>
+    <h2>เข้าสู่ <span class="serif">Studio.</span></h2>
+    <label for="sid">รหัสนักศึกษา</label>
+    <input id="sid" type="text" inputmode="numeric" autocomplete="username">
+    <div id="regf" hidden>
+      <label for="fname">ชื่อจริง (ไม่ต้องมีคำนำหน้าและนามสกุล)</label>
+      <input id="fname" type="text" autocomplete="given-name" placeholder="เช่น วริศรา">
+    </div>
+    <label for="pin" id="pinl">PIN 4 หลัก</label>
+    <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password">
+    <div id="regf2" hidden>
+      <label for="pin2">พิมพ์ PIN อีกครั้ง</label>
+      <input id="pin2" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password">
+      <p class="mute" style="margin:8px 0 0">มือถือเครื่องนี้จะถูกผูกกับรหัสของคุณ ใช้เช็คชื่อได้จากเครื่องนี้เครื่องเดียว</p>
+    </div>
+    <div style="margin-top:20px"><button id="go" style="width:100%">เข้าสู่ระบบ</button></div>
+    <div class="err" id="lerr"></div>
+    <p style="margin:14px 0 0;text-align:center"><button class="light" id="toreg" style="width:100%">ครั้งแรก? สมัครด้วยมือถือเครื่องนี้</button></p>
+  </section>
 
-<section id="cam" hidden>
-  <video id="v" playsinline muted autoplay></video>
-  <div class="top"><div><b id="who">—</b><span id="whoid"></span></div><button class="ghost" id="out">ออกจากระบบ</button></div>
-  <div class="frame"></div>
-  <div class="bot"><h2>ส่องที่ QR บนจอหน้าห้อง</h2><p>เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร</p></div>
-</section>
-<canvas id="c" hidden></canvas>
-<div id="busy" hidden>กำลังเช็คชื่อ…</div>
-<div id="toast"></div>
+  <main id="app" hidden>
+    <section id="ck" aria-live="polite">
+      <div class="ckic" id="ckic">◎</div>
+      <div style="flex:1;min-width:0">
+        <div class="eyebrow" style="color:#bbb" id="ckeb">(เช็คชื่อ)</div>
+        <h2 id="ckt">สแกน QR บนจอหน้าห้อง</h2>
+        <div id="cks">กดปุ่มเปิดกล้อง แล้วส่องที่ QR บนจอของอาจารย์</div>
+        <button class="camgo" id="camgo">เปิดกล้องสแกนเช็คชื่อ</button>
+      </div>
+    </section>
+    <div id="ckcam" hidden><video id="ckv" playsinline muted autoplay></video><i class="fr"></i><span>ส่องที่ QR บนจอหน้าห้อง เจอแล้วเช็คชื่อให้เอง</span></div>
+    <canvas id="ckc" hidden></canvas>
+    <button class="linkbtn" id="myqr" hidden>อาจารย์ให้ยื่น QR ส่วนตัว กดตรงนี้</button>
+    <section id="qrbox" aria-live="polite" hidden>
+      <div class="qr" id="qrimg"><span style="color:#999">กำลังสร้าง QR…</span></div>
+      <div>
+        <div class="eyebrow" style="color:#bbb">(QR เช็คชื่อของฉัน)</div>
+        <h2 style="margin:4px 0 2px;font-size:26px;letter-spacing:-.02em" id="qrname">—</h2>
+        <div style="color:#bbb;font-size:14px">ยื่นหน้าจอนี้ให้เครื่องของอาจารย์สแกน</div>
+        <div class="sym"><span id="qrcode"></span><div>สแกนไม่ผ่าน กดรูปนี้ที่เครื่องอาจารย์<br>แล้วแตะชื่อตัวเอง</div></div>
+        <div class="t"><i id="qrbar" style="width:100%"></i></div>
+        <div style="color:#bbb;font-size:13px;margin-top:6px">เปลี่ยนใหม่ทุก 30 วินาที แคปหน้าจอไปใช้ไม่ได้</div>
+        <div class="msg" id="qrmsg"></div>
+      </div>
+    </section>
+    <div class="pills" id="cpills" style="margin-top:22px"></div>
 
-<section id="camerr" hidden>
-  <h2>เปิดกล้องไม่ได้</h2>
-  <p id="camerrt">ให้อนุญาตการใช้กล้องสำหรับเว็บนี้ แล้วกดลองใหม่</p>
-  <p>ถ้าเปิดจาก LINE หรือ Facebook ให้กดเปิดด้วย Chrome หรือ Safari แทน</p>
-  <button class="acc" id="retry">ลองใหม่</button>
-</section>
+    <div class="head2">
+      <h2>งานทั้งหมด<sup id="cnt"></sup></h2>
+      <div class="pills" id="pills"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
 
-<section id="done" hidden>
-  <div class="ic" id="dic">✓</div>
-  <h1 id="dt">เช็คชื่อแล้ว</h1>
-  <div class="nm" id="dn"></div>
-  <div class="sub" id="ds"></div>
-  <div class="time" id="dtime"></div>
-  <div class="acts"><a id="syslink" href="#">ดูงานและส่งงาน</a><button class="ghost" id="again">สแกนอีกครั้ง</button></div>
-</section>
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+<div class="ov" id="ov"><div><div class="orb"></div><b id="ovt" style="font-size:22px">กำลังส่งงาน</b><p style="color:#bbb;max-width:340px" id="ovs"></p></div></div>
 
 <script>
-(function () {
-// ลิงก์ระบบ (Web App URL) ไม่ใช่ความลับ
-const API = 'https://script.google.com/macros/s/AKfycbyfGNsQW_rHFXmyVxJYu3HwRNvSof8BFeAzJuUK5BOzr9ZVuilG_Dhu-wElczqW15Mt/exec';
+{
 const $ = id => document.getElementById(id);
-const store = {
-  get(k) { try { return localStorage.getItem('me_' + k); } catch (e) { return null; } },
-  set(k, v) { try { localStorage.setItem('me_' + k, v); } catch (e) {} },
-  del(k) { try { localStorage.removeItem('me_' + k); } catch (e) {} }
-};
-$('sysl').href = API; $('syslink').href = API;
-let me = null, scanning = false, busy = false, lastTxt = '', lastAt = 0, toastT = null;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nl = s => esc(s).replace(/\n/g, '<br>');
+let me = null, cred = null, cur = '', open = null, picked = {}, filter = 'all';
+const FILTERS = [['all','ทั้งหมด'],['todo','ยังไม่ส่ง'],['wait','รอตรวจ'],['done','ตรวจแล้ว']];
 
-async function api(body) {
-  const r = await fetch(API, { method: 'POST', body: JSON.stringify(body) });
-  const t = await r.text();
-  let j; try { j = JSON.parse(t); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้ง'); }
-  return j;
+function run(fn, args, ok, fail) {
+  const r = google.script.run.withSuccessHandler(ok).withFailureHandler(e => { busy(false); (fail || sheetErr)(e.message || String(e)); });
+  r[fn].apply(r, args);
 }
-function toast(t) { $('toast').textContent = t; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 2600); }
-function show(id) { ['login', 'cam', 'done', 'camerr'].forEach(x => $(x).hidden = x !== id); }
+function busy(on, t, s) { $('ov').classList.toggle('on', on); if (t) $('ovt').textContent = t; $('ovs').textContent = s || ''; }
+function sheetErr(m) { const e = document.querySelector('#panel .err'); if (e) e.textContent = m; else $('lerr').textContent = m; }
 
-async function login(sid, pin, silent) {
-  $('go').disabled = true; $('lerr').textContent = '';
-  try {
-    const r = await api({ action: 'slogin', sid: sid, pin: pin });
-    if (!r.ok) throw new Error(r.error || 'เข้าสู่ระบบไม่ได้');
-    me = { sid: sid, pin: pin, name: r.name };
-    store.set('sid', sid); store.set('pin', pin);
-    $('who').textContent = r.name; $('whoid').textContent = 'รหัส ' + sid;
-    startCam();
-  } catch (e) {
-    show('login'); $('sid').value = sid;
-    $('lerr').textContent = (e.message || String(e)) + (/ยังไม่ได้สมัคร/.test(e.message) ? ' กด เข้าหน้าระบบ ด้านล่างเพื่อสมัคร' : '');
-    if (/PIN/.test(e.message)) store.del('pin');
-  } finally { $('go').disabled = false; }
+let regMode = false;
+function setReg(on) {
+  regMode = on;
+  $('regf').hidden = $('regf2').hidden = !on;
+  $('pinl').textContent = on ? 'ตั้ง PIN 4 หลักของคุณเอง' : 'PIN 4 หลัก';
+  $('go').textContent = on ? 'สมัครและผูกมือถือเครื่องนี้' : 'เข้าสู่ระบบ';
+  $('toreg').textContent = on ? 'เคยสมัครแล้ว กลับไปเข้าสู่ระบบ' : 'ครั้งแรก? สมัครด้วยมือถือเครื่องนี้';
+  document.querySelector('#login .eyebrow').textContent = on ? '(นักศึกษาใหม่)' : '(เข้าสู่ระบบ)';
+  document.querySelector('#login h2').innerHTML = on ? 'สมัคร <span class="serif">ครั้งแรก.</span>' : 'เข้าสู่ <span class="serif">Studio.</span>';
+  $('lerr').textContent = '';
 }
-$('go').onclick = () => {
-  const sid = $('sid').value.trim().replace(/[\s-]/g, ''), pin = $('pin').value.trim();
+$('toreg').onclick = () => setReg(!regMode);
+
+function register() {
+  const sid = $('sid').value.trim(), fn = $('fname').value.trim(), pin = $('pin').value.trim();
   if (!sid) return $('lerr').textContent = 'ใส่รหัสนักศึกษาก่อน';
-  if (!/^\d{4}$/.test(pin)) return $('lerr').textContent = 'PIN เป็นตัวเลข 4 หลัก';
-  login(sid, pin);
-};
-$('pin').onkeydown = e => { if (e.key === 'Enter') $('go').click(); };
-$('out').onclick = () => { stopCam(); store.del('pin'); me = null; $('pin').value = ''; show('login'); };
+  if (!fn) return $('lerr').textContent = 'ใส่ชื่อจริงก่อน';
+  if (!/^\d{4}$/.test(pin)) return $('lerr').textContent = 'PIN ต้องเป็นตัวเลข 4 หลัก';
+  if (pin !== $('pin2').value.trim()) return $('lerr').textContent = 'PIN สองช่องไม่ตรงกัน';
+  $('go').disabled = true; $('lerr').textContent = '';
+  run('studentRegister', [sid, fn, pin, deviceId()], d => {
+    $('go').disabled = false; cred = [sid, pin];
+    try { localStorage.setItem('cls_sid', sid); localStorage.setItem('cls_pin', pin); } catch (e) {}
+    render(d); afterLogin();
+  }, m => { $('go').disabled = false; $('lerr').textContent = m; });
+}
 
-async function startCam() {
-  show('cam');
+function login() {
+  if (regMode) return register();
+  const sid = $('sid').value.trim(), pin = $('pin').value.trim();
+  if (!sid) return $('lerr').textContent = 'ใส่รหัสนักศึกษาก่อน';
+  $('go').disabled = true; $('lerr').textContent = '';
+  run('studentLogin', [sid, pin, ''], d => {
+    $('go').disabled = false; cred = [sid, pin];
+    try { localStorage.setItem('cls_sid', sid); localStorage.setItem('cls_pin', pin); } catch (e) {} // จำไว้ เปิดครั้งหน้าเข้าเลย
+    render(d); afterLogin();
+  }, m => {
+    $('go').disabled = false; try { localStorage.removeItem('cls_pin'); } catch (e) {}
+    if (/ยังไม่ได้สมัคร/.test(m)) { setReg(true); $('lerr').textContent = 'รหัสนี้ยังไม่ได้สมัคร ใส่ชื่อจริงและตั้ง PIN ในมือถือของคุณ'; }
+    else $('lerr').textContent = m;
+  });
+}
+
+// QR ประจำตัว ขอใหม่จากระบบทุก 30 วินาที
+function deviceId() {
+  let d = '';
+  try { d = localStorage.getItem('cls_dev') || ''; if (!d) { d = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12); localStorage.setItem('cls_dev', d); } } catch (e) { }
+  return d;
+}
+const SYM = [['🍎','แอปเปิล'],['🍌','กล้วย'],['🍇','องุ่น'],['🍉','แตงโม'],['🐶','หมา'],['🐱','แมว'],['🐟','ปลา'],['🐢','เต่า'],['⭐','ดาว'],['🌙','พระจันทร์'],['☀️','พระอาทิตย์'],['⚡','สายฟ้า'],['🚗','รถ'],['✈️','เครื่องบิน'],['⚽','ลูกบอล'],['🎈','ลูกโป่ง']];
+let qrT = null, barT = null;
+function qrMode() { $('qrbox').hidden = false; }
+function qrLoop() {
+  clearTimeout(qrT);
+  if (!cred) return;
+  google.script.run.withSuccessHandler(r => {
+    qrMode('qr');
+    $('qrmsg').textContent = '';
+    $('qrname').textContent = r.name;
+    const q = qrcode(0, 'M'); q.addData(r.token); q.make();
+    $('qrimg').innerHTML = q.createImgTag(8, 16); // เป็นรูปภาพ โหมดมืดของมือถือจะไม่ทำให้ QR จาง
+    $('qrcode').textContent = (SYM[parseInt(r.code, 16)] || ['?'])[0];
+    let left = Math.round(r.ms / 1000);
+    clearInterval(barT);
+    const tick = () => { $('qrbar').style.width = Math.max(0, left / 30 * 100) + '%'; left--; };
+    tick(); barT = setInterval(tick, 1000);
+    qrT = setTimeout(qrLoop, r.ms + 400);
+  }).withFailureHandler(e => {
+    qrMode('qr');
+    $('qrmsg').textContent = e.message || String(e);
+    $('qrimg').innerHTML = '<span style="color:#999;padding:12px;text-align:center">สร้าง QR ไม่ได้</span>';
+    if (!/ยังไม่ได้สมัคร|PIN/.test(e.message || '')) qrT = setTimeout(qrLoop, 8000);
+  }).myCode(cred[0], cred[1]);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && cred && !$('qrbox').hidden) qrLoop(); });
+
+function state(a) {
+  if (!a.sub) return ['todo', '', a.overdue ? 'ไม่ได้ส่ง' : 'ยังไม่ส่ง'];
+  if (a.sub.status === 'รอตรวจ') return ['wait', 'warn', 'รอตรวจ'];
+  return ['done', 'ok', a.sub.late ? 'ส่งช้า · ตรวจแล้ว' : 'ตรวจแล้ว'];
+}
+const lab = a => 'A' + String(me.assignments.indexOf(a) + 1).padStart(2, '0');
+const fdate = s => { if (!s) return 'ไม่มีกำหนด'; const d = new Date(s.replace(' ', 'T')); return isNaN(d) ? s : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' ' + s.slice(11); };
+
+function render(d) {
+  me = d;
+  $('login').hidden = true; $('app').hidden = false; $('out').hidden = false; document.body.classList.add('in');
+  $('h1').textContent = 'สวัสดี'; $('h2').textContent = d.name.split(' ')[0] + '.';
+  $('cpills').innerHTML = d.courses.length > 1 ? d.courses.map(c => '<button class="pill' + (d.course && c.id === d.course.id ? ' on' : '') + '" data-c="' + c.id + '">' + esc(c.name) + '</button>').join('') : '';
+  $('cpills').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { if (b.dataset.c === cur) return; busy(true, 'กำลังเปิดวิชา', ''); run('studentLogin', [cred[0], cred[1], b.dataset.c], x => { busy(false); open = null; render(x); }); });
+  if (!d.course) {
+    $('course').textContent = d.app; $('term').textContent = '—'; $('lead').textContent = 'รหัส ' + d.id;
+ $('grid').innerHTML = '<p class="mute">ยังไม่มีรายวิชาที่คุณลงทะเบียน แจ้งอาจารย์ให้เพิ่มชื่อเข้ารายวิชา</p>'; $('pills').innerHTML = ''; $('cnt').textContent = '';
+    return;
+  }
+  cur = d.course.id;
+  $('course').textContent = (d.course.code ? d.course.code + ' ' : '') + d.course.name; $('term').textContent = d.course.term + ' · ' + d.section;
+  $('lead').textContent = d.course.name + ' · ' + d.section + ' · รหัส ' + d.id;
+  $('cnt').textContent = String(d.assignments.length).padStart(2, '0');
+  $('pills').innerHTML = FILTERS.map(f => '<button class="pill' + (filter === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>').join('');
+  $('pills').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filter = b.dataset.f; render(me); });
+  const list = d.assignments.filter(x => filter === 'all' || state(x)[0] === filter);
+  $('grid').innerHTML = list.length ? list.map((x, i) => {
+    const s = state(x), ix = d.assignments.indexOf(x);
+    return '<article class="pcard" tabindex="0" data-id="' + x.id + '"><div class="art a' + (ix % 4) + '"><span class="num">' + lab(x) + '</span>' +
+      '<div class="glass"><span>เต็ม ' + x.max + '</span><span class="chip ' + s[1] + '">' + s[2] + (x.sub && x.sub.score !== '' && x.sub.score != null ? ' · ' + x.sub.score : '') + '</span></div></div>' +
+      '<div class="meta">กำหนดส่ง ' + esc(fdate(x.due)) + '</div><h3>' + esc(x.title) + '</h3>' + (x.brief ? '<p class="ex">' + esc(x.brief) + '</p>' : '') + '</article>';
+  }).join('') : '<p class="mute">ไม่มีงานในหมวดนี้</p>';
+  $('grid').querySelectorAll('.pcard').forEach(el => { el.onclick = () => openSheet(el.dataset.id); el.onkeydown = e => { if (e.key === 'Enter') openSheet(el.dataset.id); }; });
+  if (open) drawSheet();
+}
+
+function openSheet(id) { open = id; drawSheet(); $('sheet').classList.add('on'); }
+function closeSheet() { open = null; $('sheet').classList.remove('on'); }
+$('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+function drawSheet() {
+  const a = me.assignments.find(x => x.id === open); if (!a) return closeSheet();
+  const s = state(a), p = picked[a.id], canSend = !a.overdue || me.allowLate;
+  let h = '<div class="top"><button class="close" id="x">ปิด</button><div class="eyebrow">(' + lab(a) + ') · <span class="chip ' + s[1] + '">' + s[2] + '</span></div>' +
+    '<h2>' + esc(a.title) + '</h2><div class="mute" style="margin-top:6px">กำหนดส่ง ' + esc(fdate(a.due)) + ' · เต็ม ' + a.max + ' คะแนน</div></div><div class="body">';
+  if (a.brief) h += '<p style="margin-top:0">' + nl(a.brief) + '</p>';
+  h += '<div class="mute">เกณฑ์ที่ใช้ตรวจ</div><ul class="rub">' + a.rubric.map(r => '<li>' + esc(r.name) + ' · ' + r.max + '</li>').join('') + '</ul>';
+  if (a.sub) h += result(a);
+  if (canSend) {
+    h += '<label>' + (a.sub ? 'ส่งงานใหม่ (ระบบใช้ชิ้นล่าสุด)' : 'อัปโหลดผลงาน') + '</label>' +
+      '<div class="drop" id="drop"><input type="file" id="file" accept="image/png,image/jpeg,image/webp" hidden>' +
+      (p ? '<img src="' + p.url + '" alt="ตัวอย่างงาน"><div class="mute">' + esc(p.name) + ' · แตะเพื่อเปลี่ยนรูป</div>' : '<b>แตะเพื่อเลือกรูป</b><div class="mute">หรือลากไฟล์มาวาง JPG PNG WEBP ไม่เกิน 15 MB</div>') +
+      '</div><div style="margin-top:14px"><button class="acc" id="send"' + (p ? '' : ' disabled') + '>ส่งงาน</button></div>' +
+      (a.overdue ? '<p class="mute">เลยกำหนดแล้ว ส่งได้แต่จะถูกหักคะแนนตามที่อาจารย์กำหนด</p>' : '');
+  } else h += '<p class="mute">ปิดรับงานนี้แล้ว</p>';
+  $('panel').innerHTML = h + '<div class="err"></div></div>';
+  $('x').onclick = closeSheet;
+  const drop = $('drop'); if (!drop) return;
+  drop.onclick = () => $('file').click();
+  $('file').onchange = e => pick(e.target.files[0]);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('on'); };
+  drop.ondragleave = () => drop.classList.remove('on');
+  drop.ondrop = e => { e.preventDefault(); pick(e.dataTransfer.files[0]); };
+  $('send').onclick = submit;
+}
+
+function result(a) {
+  const s = a.sub;
+  if (s.status === 'รอตรวจ') return '<div class="fb" style="margin:18px 0"><b>ส่งเมื่อ ' + esc(s.time) + '</b>งานอยู่ในคิวรอตรวจ กลับมาดูอีกครั้งภายหลังได้เลย</div>';
+  let h = '<div class="res"><div><div class="mute" style="color:#9a9aa2">ส่งเมื่อ ' + esc(s.time) + (s.late ? ' · ส่งช้า' : '') + '</div>';
+  h += s.score !== '' && s.score != null ? '<div class="big" style="margin-top:10px">' + s.score + '<small> /' + a.max + '</small></div><div style="font-size:13px;color:#9a9aa2;margin-top:8px">' + (s.confirmed ? 'อาจารย์ยืนยันแล้ว' : 'คะแนนเบื้องต้น') + '</div>'
+    : '<div style="margin-top:10px">รออาจารย์ยืนยันคะแนน</div>';
+  h += '</div><div class="crit">' + (s.detail && s.detail.criteria ? s.detail.criteria.map(c => '<div class="r"><span>' + esc(c.name) + '</span><span>' + c.score + '/' + c.max + '</span></div><div class="bar2"><i style="width:' + (c.score / c.max * 100) + '%"></i></div>' + (c.comment ? '<p>' + esc(c.comment) + '</p>' : '')).join('') : '') + '</div></div>';
+  if (s.feedback) h += '<div class="fb"><b>สรุปจากผู้ตรวจ</b>' + nl(s.feedback) + '</div>';
+  if (s.detail && s.detail.strengths) h += '<div class="fb"><b>จุดเด่น</b>' + nl(s.detail.strengths) + '</div>';
+  if (s.detail && s.detail.improvements) h += '<div class="fb"><b>สิ่งที่ควรปรับ</b>' + nl(s.detail.improvements) + '</div>';
+  return h;
+}
+
+function pick(f) {
+  if (!f) return;
+  if (!/^image\/(png|jpe?g|webp)$/.test(f.type)) return sheetErr('รองรับเฉพาะไฟล์ JPG, PNG, WEBP');
+  if (f.size > 40 * 1024 * 1024) return sheetErr('ไฟล์ใหญ่เกินไป');
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      let url = fr.result;
+      const big = Math.max(img.width, img.height);
+      if (f.size > 1.5 * 1024 * 1024 || big > 2000) { // ย่อรูปใหญ่ให้ด้านยาวไม่เกิน 2000 พิกเซล ส่งเร็วและประหยัดที่เก็บ
+        const k = Math.min(1, 2000 / big), c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        url = c.toDataURL('image/jpeg', 0.88);
+      }
+      picked[open] = { url: url, name: f.name };
+      drawSheet();
+    };
+    img.onerror = () => sheetErr('เปิดรูปนี้ไม่ได้ ลองบันทึกเป็น JPG ใหม่');
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+}
+
+function submit() {
+  const p = picked[open]; if (!p) return;
+  busy(true, 'กำลังส่งงาน', 'รอสักครู่ อย่าปิดหน้านี้จนกว่าจะส่งเสร็จ');
+  run('submitWork', [cred[0], cred[1], open, p.url, p.name], d => { delete picked[open]; busy(false); render(d); });
+}
+
+// ---------- เช็คชื่อด้วยการสแกน QR บนจอหน้าห้อง ----------
+let claim = null, claimErr = '', claimCourse = '';
+function ckShow(cls, ic, eb, t, s) { $('ck').className = cls; $('ckic').textContent = ic; $('ckeb').textContent = eb; $('ckt').textContent = t; $('cks').textContent = s; }
+function todayDone(d) {
+  const t = new Date(), ds = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  const r = ((d && d.attendance && d.attendance.days) || []).find(a => a.d === ds && a.in);
+  if (r) { ckShow('ok', '✓', '(' + (d.course ? d.course.name : 'เช็คชื่อ') + ')', 'วันนี้เช็คชื่อแล้ว', 'เวลา ' + r.in + ' · ' + r.st); return true; }
+  else ckShow('', '◎', '(เช็คชื่อ)', 'สแกน QR บนจอหน้าห้อง', 'กดปุ่มเปิดกล้อง แล้วส่องที่ QR บนจอของอาจารย์');
+}
+function afterLogin() {
+  if (claimErr) return ckShow('bad', '!', '(เช็คชื่อไม่สำเร็จ)', claimErr, 'สแกน QR บนจอหน้าห้องใหม่อีกครั้ง');
+  if (!claim) { if (!todayDone(me)) camStart(); return; } // เข้าระบบแล้วเปิดกล้องให้เลย ถ้าวันนี้ยังไม่ได้เช็คชื่อ
+  ckShow('', '…', '(' + claimCourse + ')', 'กำลังเช็คชื่อ', 'รอสักครู่');
+  google.script.run.withSuccessHandler(r => {
+    claim = null;
+    ckShow('ok', '✓', '(' + r.course + ')', r.duplicate ? 'เช็คชื่อไปแล้ววันนี้' : 'เช็คชื่อแล้ว', r.name + ' · เวลา ' + r.time + (r.status ? ' · ' + r.status : ''));
+    if (navigator.vibrate) try { navigator.vibrate(120); } catch (e) {}
+  }).withFailureHandler(e => { const m = e.message || String(e); ckShow('bad', '!', '(เช็คชื่อไม่สำเร็จ)', m, /ปิดรับ/.test(m) ? 'หมดเวลาเช็คชื่อของวันนี้แล้ว' : 'สแกน QR บนจอหน้าห้องใหม่อีกครั้ง'); }).studentCheckin(cred[0], cred[1], claim);
+}
+// ---------- กล้องสแกน QR หน้าห้อง ในหน้านี้เลย ----------
+let camOn = false, camBusy = false, camLast = '', camLastAt = 0, camTs = 0;
+async function camStart() {
+  if (camOn) return;
+  $('ckcam').hidden = false; $('camgo').textContent = 'ปิดกล้อง';
   try {
-    const v = $('v');
-    if (!v.srcObject) v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    await v.play();
-    scanning = true; requestAnimationFrame(loop);
+    const v = $('ckv');
+    v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    await v.play(); camOn = true; requestAnimationFrame(camLoop);
   } catch (e) {
-    show('camerr');
-    $('camerrt').textContent = /Permission|NotAllowed/i.test(e.name + e.message) ? 'มือถือไม่อนุญาตให้ใช้กล้อง ให้กดรูปกุญแจหรือ aA ข้างช่องลิงก์ แล้วอนุญาตกล้อง จากนั้นกดลองใหม่' : 'ไม่พบกล้อง หรือกล้องถูกแอปอื่นใช้อยู่';
+    camStop();
+    ckShow('bad', '!', '(เปิดกล้องไม่ได้)', 'มือถือไม่อนุญาตให้ใช้กล้อง', /Permission|NotAllowed/i.test(e.name + e.message) ? 'กดรูปกุญแจหรือ aA ข้างช่องลิงก์ อนุญาตกล้อง แล้วกดเปิดกล้องอีกครั้ง ถ้าเปิดจาก LINE ให้เปิดด้วย Chrome หรือ Safari' : 'ไม่พบกล้อง หรือกล้องถูกแอปอื่นใช้อยู่');
   }
 }
-function stopCam() { scanning = false; const v = $('v'); if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; } }
-$('retry').onclick = startCam;
-
-let lastScan = 0;
-function loop(ts) {
-  if (!scanning) return;
-  requestAnimationFrame(loop);
-  if (busy || ts - lastScan < 140) return;
-  lastScan = ts;
-  const v = $('v'); if (v.readyState < 2 || !v.videoWidth) return;
-  const c = $('c'), w = 560, h = Math.round(v.videoHeight * w / v.videoWidth);
-  c.width = w; c.height = h;
-  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(v, 0, 0, w, h);
-  const code = jsQR(x.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
-  if (code && code.data) onCode(code.data);
+function camStop() {
+  camOn = false; $('ckcam').hidden = true; $('camgo').textContent = 'เปิดกล้องสแกนเช็คชื่อ';
+  const v = $('ckv'); if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
 }
-async function onCode(txt) {
-  if (!/ci=|\|/.test(txt)) { if (txt !== lastTxt) toast('นี่ไม่ใช่ QR เช็คชื่อ ให้ส่องที่จอหน้าห้อง'); lastTxt = txt; return; }
-  if (txt === lastTxt && Date.now() - lastAt < 3000) return;
-  lastTxt = txt; lastAt = Date.now(); busy = true; $('busy').hidden = false;
+function camLoop(ts) {
+  if (!camOn) return;
+  requestAnimationFrame(camLoop);
+  if (camBusy || ts - camTs < 140) return;
+  camTs = ts;
+  const v = $('ckv'); if (v.readyState < 2 || !v.videoWidth || typeof jsQR === 'undefined') return;
+  const c = $('ckc'), w = 560, hh = Math.round(v.videoHeight * w / v.videoWidth);
+  c.width = w; c.height = hh;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(v, 0, 0, w, hh);
+  const q = jsQR(g.getImageData(0, 0, w, hh).data, w, hh, { inversionAttempts: 'attemptBoth' });
+  if (q && q.data) camCode(q.data);
+}
+function camCode(txt) {
+  if (!/ci=|\|/.test(txt)) return;
+  if (txt === camLast && Date.now() - camLastAt < 3000) return;
+  camLast = txt; camLastAt = Date.now(); camBusy = true;
+  ckShow('', '…', '(เช็คชื่อ)', 'กำลังเช็คชื่อ', 'รอสักครู่');
+  google.script.run.withSuccessHandler(r => {
+    camBusy = false; camStop();
+    ckShow('ok', '✓', '(' + r.course + (r.section ? ' · ' + r.section : '') + ')', r.duplicate ? 'เช็คชื่อไปแล้ววันนี้' : 'เช็คชื่อแล้ว', r.name + ' · เวลา ' + r.time + ' น.');
+    if (navigator.vibrate) try { navigator.vibrate([60, 40, 60]); } catch (e) {}
+  }).withFailureHandler(e => {
+    camBusy = false; const m = e.message || String(e);
+    if (/ปิดรับ/.test(m)) { camStop(); ckShow('bad', '!', '(เช็คชื่อไม่สำเร็จ)', m, 'หมดเวลาเช็คชื่อของวันนี้แล้ว'); }
+    else ckShow('bad', '!', '(ลองส่องใหม่)', m, 'ส่องที่ QR บนจอหน้าห้องอีกครั้ง');
+  }).studentScan(cred[0], cred[1], txt);
+}
+$('camgo').onclick = () => camOn ? camStop() : camStart();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && camOn) camStop(); });
+$('myqr').onclick = () => { $('qrbox').hidden = !$('qrbox').hidden; $('myqr').textContent = $('qrbox').hidden ? 'อาจารย์ให้ยื่น QR ส่วนตัว กดตรงนี้' : 'ซ่อน QR ส่วนตัว'; if (!$('qrbox').hidden) qrLoop(); else clearTimeout(qrT); };
+
+$('go').onclick = login;
+$('pin').onkeydown = e => { if (e.key === 'Enter') login(); };
+$('out').onclick = () => { try { localStorage.removeItem('cls_pin'); } catch (e) {} location.reload(); };
+function autoLogin() {
   try {
-    const r = await api({ action: 'selfcheck', sid: me.sid, pin: me.pin, token: txt });
-    if (r.ok) return done(true, r);
-    if (r.closed) return done(false, r);
-    toast(r.error || 'เช็คชื่อไม่สำเร็จ ลองส่องใหม่');
-  } catch (e) { toast(e.message || 'เน็ตมีปัญหา ลองส่องใหม่'); }
-  finally { busy = false; $('busy').hidden = true; }
+    $('sid').value = localStorage.getItem('cls_sid') || '';
+    const sp = localStorage.getItem('cls_pin');
+    if ($('sid').value && sp !== null) { $('pin').value = sp; login(); } // เข้าระบบเองครั้งต่อไป
+  } catch (e) {}
 }
-function done(ok, r) {
-  stopCam(); show('done');
-  $('done').className = ok ? '' : 'bad';
-  $('dic').textContent = ok ? '✓' : '!';
-  $('dt').textContent = ok ? (r.duplicate ? 'เช็คชื่อไปแล้ววันนี้' : 'เช็คชื่อแล้ว') : 'ปิดรับเช็คชื่อแล้ว';
-  $('dn').textContent = r.name || (me && me.name) || '';
-  $('ds').textContent = ok ? (r.course || '') + (r.section ? ' · ' + r.section : '') : r.error;
-  $('dtime').textContent = ok ? (r.time || '') + ' น.' : '';
-  if (ok && navigator.vibrate) try { navigator.vibrate([60, 40, 60]); } catch (e) {}
-}
-$('again').onclick = () => { lastTxt = ''; startCam(); };
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') stopCam();
-  else if (me && !$('cam').hidden) startCam();
+google.script.url.getLocation(loc => {
+  const ci = loc && loc.parameter && loc.parameter.ci;
+  if (!ci) return autoLogin();
+  $('lead').textContent = 'กำลังตรวจ QR เช็คชื่อ…';
+  google.script.run.withSuccessHandler(r => {
+    claim = r.claim; claimCourse = r.course;
+    $('lead').textContent = 'ล็อกอินเพื่อเช็คชื่อวิชา ' + r.course;
+    autoLogin();
+  }).withFailureHandler(e => { claimErr = e.message || String(e); $('lead').textContent = claimErr; autoLogin(); }).roomClaim(ci);
 });
-
-const sid = store.get('sid'), pin = store.get('pin');
-if (sid) $('sid').value = sid;
-if (sid && pin) { show('cam'); login(sid, pin, true); } else show('login');
-})();
+google.script.run.withSuccessHandler(i => { $('course').textContent = i.app; $('term').textContent = i.courses + ' รายวิชาเปิดอยู่'; }).publicInfo();
+}
 </script>
 </body>
 </html>
