@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#050506">
+<title>เช็คชื่อ CMT·MJU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+:root{--bg:#050506;--ink:#f4f2ee;--mute:#9a9aa2;--in:#ff5a1f;--ok:#1f8a5b;--bad:#d93a2b;--sans:"Anuphan",system-ui,sans-serif;--serif:"Instrument Serif",Georgia,serif}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans);-webkit-tap-highlight-color:transparent}
+.serif{font-family:var(--serif);font-style:italic;font-weight:400}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:14px 22px;cursor:pointer;background:var(--ink);color:#111}
+button.acc{background:var(--in);color:#160600}button.ghost{background:rgba(255,255,255,.1);color:#fff}
+input{font:inherit;font-size:20px;width:100%;padding:14px 16px;border-radius:14px;border:1px solid #2a2a30;background:#121215;color:#fff;letter-spacing:.04em}
+a{color:#fff}
+/* เข้าสู่ระบบ */
+#login{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));position:relative;overflow:hidden}
+#login:before{content:"";position:absolute;width:520px;height:520px;right:-220px;top:-260px;background:radial-gradient(circle,#ff6a1a 0,rgba(255,106,26,.25) 35%,transparent 68%);pointer-events:none}
+#login h1{font-size:56px;line-height:1;margin:0 0 6px;position:relative}
+#login p{color:var(--mute);margin:0 0 24px;position:relative}
+#login label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
+#login .err{color:#ff8a7a;min-height:24px;margin-top:10px;font-size:14px}
+#login button{width:100%;margin-top:16px;font-size:18px}
+#login .small{font-size:14px;color:var(--mute);margin-top:22px;text-align:center}
+/* กล้อง */
+#cam{position:fixed;inset:0;background:#000}
+#cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#cam .top{position:absolute;left:0;right:0;top:0;padding:calc(14px + env(safe-area-inset-top)) 18px 40px;background:linear-gradient(#000c,#0000);display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:2}
+#cam .top b{font-size:18px;display:block}#cam .top span{font-size:13px;color:#ccc}
+#cam .top button{padding:8px 14px;font-size:13px}
+#cam .frame{position:absolute;left:50%;top:46%;width:min(72vw,360px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:28px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);z-index:1}
+#cam .frame:before{content:"";position:absolute;inset:0;border-radius:28px;border:3px solid var(--in);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+#cam .bot{position:absolute;left:0;right:0;bottom:0;padding:40px 22px calc(22px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000d);text-align:center;z-index:2}
+#cam .bot h2{margin:0 0 4px;font-size:24px}#cam .bot p{margin:0;color:#ccc;font-size:14px}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(120px + env(safe-area-inset-bottom));z-index:5;background:var(--bad);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;text-align:center;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+#toast.on{opacity:1;transform:none}
+#busy{position:fixed;inset:0;z-index:4;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600}
+/* ผล */
+#done{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));background:var(--ok)}
+#done.bad{background:#5a1610}
+#done .ic{width:120px;height:120px;border-radius:36px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:72px;line-height:1;margin-bottom:22px}
+#done h1{margin:0;font-size:44px;line-height:1.1}#done .nm{font-size:22px;font-weight:600;margin-top:10px}
+#done .sub{color:#e5f3ec;margin-top:4px}#done.bad .sub{color:#f3d5d1}
+#done .time{font-size:64px;font-weight:700;margin-top:18px;letter-spacing:-.02em}
+#done .acts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin-top:28px}
+#done .acts a{display:block;text-decoration:none;border-radius:999px;padding:14px 22px;font-weight:600;background:rgba(255,255,255,.16)}
+#camerr{position:fixed;inset:0;z-index:3;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:32px 24px;gap:12px}
+#camerr h2{margin:0;font-size:28px}#camerr p{margin:0;color:var(--mute)}
+</style>
+</head>
+<body>
+
+<section id="login" hidden>
+  <div style="color:var(--mute);font-size:13px;letter-spacing:.12em;position:relative">CMT·MJU</div>
+  <h1>เช็ค<span class="serif" style="color:var(--in)">ชื่อ</span></h1>
+  <p>ใส่รหัสนักศึกษากับ PIN ครั้งเดียว ครั้งต่อไปเปิดมาเป็นกล้องเลย</p>
+  <label for="sid">รหัสนักศึกษา</label>
+  <input id="sid" inputmode="numeric" autocomplete="username">
+  <label for="pin">PIN 4 หลัก</label>
+  <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password">
+  <div class="err" id="lerr"></div>
+  <button class="acc" id="go">เข้าสู่ระบบ</button>
+  <div class="small">ยังไม่ได้สมัคร หรือจะส่งงาน <a id="sysl" href="#">เข้าหน้าระบบ</a></div>
+</section>
+
+<section id="cam" hidden>
+  <video id="v" playsinline muted autoplay></video>
+  <div class="top"><div><b id="who">—</b><span id="whoid"></span></div><button class="ghost" id="out">ออกจากระบบ</button></div>
+  <div class="frame"></div>
+  <div class="bot"><h2>ส่องที่ QR บนจอหน้าห้อง</h2><p>เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร</p></div>
+</section>
+<canvas id="c" hidden></canvas>
+<div id="busy" hidden>กำลังเช็คชื่อ…</div>
+<div id="toast"></div>
+
+<section id="camerr" hidden>
+  <h2>เปิดกล้องไม่ได้</h2>
+  <p id="camerrt">ให้อนุญาตการใช้กล้องสำหรับเว็บนี้ แล้วกดลองใหม่</p>
+  <p>ถ้าเปิดจาก LINE หรือ Facebook ให้กดเปิดด้วย Chrome หรือ Safari แทน</p>
+  <button class="acc" id="retry">ลองใหม่</button>
+</section>
+
+<section id="done" hidden>
+  <div class="ic" id="dic">✓</div>
+  <h1 id="dt">เช็คชื่อแล้ว</h1>
+  <div class="nm" id="dn"></div>
+  <div class="sub" id="ds"></div>
+  <div class="time" id="dtime"></div>
+  <div class="acts"><a id="syslink" href="#">ดูงานและส่งงาน</a><button class="ghost" id="again">สแกนอีกครั้ง</button></div>
+</section>
+
+<script>
+(function () {
+// ลิงก์ระบบ (Web App URL) ไม่ใช่ความลับ
+const API = 'https://script.google.com/macros/s/AKfycbyfGNsQW_rHFXmyVxJYu3HwRNvSof8BFeAzJuUK5BOzr9ZVuilG_Dhu-wElczqW15Mt/exec';
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem('me_' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('me_' + k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem('me_' + k); } catch (e) {} }
+};
+$('sysl').href = API; $('syslink').href = API;
+let me = null, scanning = false, busy = false, lastTxt = '', lastAt = 0, toastT = null;
+
+async function api(body) {
+  const r = await fetch(API, { method: 'POST', body: JSON.stringify(body) });
+  const t = await r.text();
+  let j; try { j = JSON.parse(t); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้ง'); }
+  return j;
+}
+function toast(t) { $('toast').textContent = t; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 2600); }
+function show(id) { ['login', 'cam', 'done', 'camerr'].forEach(x => $(x).hidden = x !== id); }
+
+async function login(sid, pin, silent) {
+  $('go').disabled = true; $('lerr').textContent = '';
+  try {
+    const r = await api({ action: 'slogin', sid: sid, pin: pin });
+    if (!r.ok) throw new Error(r.error || 'เข้าสู่ระบบไม่ได้');
+    me = { sid: sid, pin: pin, name: r.name };
+    store.set('sid', sid); store.set('pin', pin);
+    $('who').textContent = r.name; $('whoid').textContent = 'รหัส ' + sid;
+    startCam();
+  } catch (e) {
+    show('login'); $('sid').value = sid;
+    $('lerr').textContent = (e.message || String(e)) + (/ยังไม่ได้สมัคร/.test(e.message) ? ' กด เข้าหน้าระบบ ด้านล่างเพื่อสมัคร' : '');
+    if (/PIN/.test(e.message)) store.del('pin');
+  } finally { $('go').disabled = false; }
+}
+$('go').onclick = () => {
+  const sid = $('sid').value.trim().replace(/[\s-]/g, ''), pin = $('pin').value.trim();
+  if (!sid) return $('lerr').textContent = 'ใส่รหัสนักศึกษาก่อน';
+  if (!/^\d{4}$/.test(pin)) return $('lerr').textContent = 'PIN เป็นตัวเลข 4 หลัก';
+  login(sid, pin);
+};
+$('pin').onkeydown = e => { if (e.key === 'Enter') $('go').click(); };
+$('out').onclick = () => { stopCam(); store.del('pin'); me = null; $('pin').value = ''; show('login'); };
+
+async function startCam() {
+  show('cam');
+  try {
+    const v = $('v');
+    if (!v.srcObject) v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    await v.play();
+    scanning = true; requestAnimationFrame(loop);
+  } catch (e) {
+    show('camerr');
+    $('camerrt').textContent = /Permission|NotAllowed/i.test(e.name + e.message) ? 'มือถือไม่อนุญาตให้ใช้กล้อง ให้กดรูปกุญแจหรือ aA ข้างช่องลิงก์ แล้วอนุญาตกล้อง จากนั้นกดลองใหม่' : 'ไม่พบกล้อง หรือกล้องถูกแอปอื่นใช้อยู่';
+  }
+}
+function stopCam() { scanning = false; const v = $('v'); if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; } }
+$('retry').onclick = startCam;
+
+let lastScan = 0;
+function loop(ts) {
+  if (!scanning) return;
+  requestAnimationFrame(loop);
+  if (busy || ts - lastScan < 140) return;
+  lastScan = ts;
+  const v = $('v'); if (v.readyState < 2 || !v.videoWidth) return;
+  const c = $('c'), w = 560, h = Math.round(v.videoHeight * w / v.videoWidth);
+  c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(v, 0, 0, w, h);
+  const code = jsQR(x.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+  if (code && code.data) onCode(code.data);
+}
+async function onCode(txt) {
+  if (!/ci=|\|/.test(txt)) { if (txt !== lastTxt) toast('นี่ไม่ใช่ QR เช็คชื่อ ให้ส่องที่จอหน้าห้อง'); lastTxt = txt; return; }
+  if (txt === lastTxt && Date.now() - lastAt < 3000) return;
+  lastTxt = txt; lastAt = Date.now(); busy = true; $('busy').hidden = false;
+  try {
+    const r = await api({ action: 'selfcheck', sid: me.sid, pin: me.pin, token: txt });
+    if (r.ok) return done(true, r);
+    if (r.closed) return done(false, r);
+    toast(r.error || 'เช็คชื่อไม่สำเร็จ ลองส่องใหม่');
+  } catch (e) { toast(e.message || 'เน็ตมีปัญหา ลองส่องใหม่'); }
+  finally { busy = false; $('busy').hidden = true; }
+}
+function done(ok, r) {
+  stopCam(); show('done');
+  $('done').className = ok ? '' : 'bad';
+  $('dic').textContent = ok ? '✓' : '!';
+  $('dt').textContent = ok ? (r.duplicate ? 'เช็คชื่อไปแล้ววันนี้' : 'เช็คชื่อแล้ว') : 'ปิดรับเช็คชื่อแล้ว';
+  $('dn').textContent = r.name || (me && me.name) || '';
+  $('ds').textContent = ok ? (r.course || '') + (r.section ? ' · ' + r.section : '') : r.error;
+  $('dtime').textContent = ok ? (r.time || '') + ' น.' : '';
+  if (ok && navigator.vibrate) try { navigator.vibrate([60, 40, 60]); } catch (e) {}
+}
+$('again').onclick = () => { lastTxt = ''; startCam(); };
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') stopCam();
+  else if (me && !$('cam').hidden) startCam();
+});
+
+const sid = store.get('sid'), pin = store.get('pin');
+if (sid) $('sid').value = sid;
+if (sid && pin) { show('cam'); login(sid, pin, true); } else show('login');
+})();
+</script>
+</body>
+</html>
