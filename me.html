@@ -120,11 +120,15 @@ body.in .title h1{font-size:clamp(40px,8vw,96px)}
 #qrbox .t{height:5px;background:rgba(255,255,255,.15);border-radius:9px;overflow:hidden;margin-top:14px}#qrbox .t i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
 [hidden]{display:none!important}
 html{color-scheme:only light}
-#ck{background:#0b0b0b;color:#fff;border-radius:24px;padding:22px 24px;display:flex;gap:18px;align-items:center;margin-top:24px;position:relative;overflow:hidden}
+#ck{background:#0b0b0b;color:#fff;border-radius:24px;padding:22px 24px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:24px;position:relative;overflow:hidden}
 #ck h2{margin:4px 0 4px;font-size:26px;letter-spacing:-.02em}#ck #cks{color:#bbb;font-size:14px}
 #ck .ckic{flex:0 0 auto;width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:36px}
 #ck.ok{background:#0f3d2a}#ck.ok .ckic{background:#1f8a5b}#ck.bad{background:#3d1212}#ck.bad .ckic{background:#b3261e}
-.camgo{display:block;width:100%;margin-top:14px;background:#ff5a1f;color:#160600;border:0;font:inherit;font-weight:700;font-size:19px;border-radius:18px;padding:16px 18px;cursor:pointer}
+.camgo{display:flex;align-items:center;gap:16px;width:100%;margin-top:2px;background:#ff5a1f;color:#160600;border:0;font:inherit;text-align:left;border-radius:22px;padding:16px 18px;cursor:pointer}
+.camgo .si{flex:0 0 auto;width:64px;height:64px;border-radius:18px;background:#160600;color:#ff5a1f;display:flex;align-items:center;justify-content:center}
+.camgo .si svg{width:38px;height:38px}
+.camgo .st b{display:block;font-size:22px;line-height:1.2}.camgo .st small{display:block;font-size:13px;opacity:.8;margin-top:2px}
+.camgo:active{transform:scale(.98)}
 #ckcam{position:fixed;inset:0;z-index:60;background:#000}
 #ckcam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 #ckcam .fr{position:absolute;left:3vw;right:3vw;top:calc(76px + env(safe-area-inset-top));bottom:calc(104px + env(safe-area-inset-bottom));border-radius:28px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35)}
@@ -219,10 +223,10 @@ if (typeof google === 'undefined' || !google.script) (function () {
       <div class="ckic" id="ckic">◎</div>
       <div style="flex:1;min-width:0">
         <div class="eyebrow" style="color:#bbb" id="ckeb">(เช็คชื่อ)</div>
-        <h2 id="ckt">สแกน QR บนจอหน้าห้อง</h2>
-        <div id="cks">กดปุ่มเปิดกล้อง แล้วส่องที่ QR บนจอของอาจารย์</div>
-        <button class="camgo" id="camgo">📷 สแกนเช็คชื่อ</button>
+        <h2 id="ckt">เช็คชื่อ</h2>
+        <div id="cks">ตอนอาจารย์ขึ้น QR บนจอ ให้กดปุ่มสแกนด้านล่าง</div>
       </div>
+      <button class="camgo" id="camgo"><span class="si"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 16V9a3 3 0 0 1 3-3h7M32 6h7a3 3 0 0 1 3 3v7M42 32v7a3 3 0 0 1-3 3h-7M16 42H9a3 3 0 0 1-3-3v-7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M12 24h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span><span class="st"><b id="camgot">สแกนเช็คชื่อ</b><small>กดแล้วกล้องจะเปิด ส่องที่ QR บนจอหน้าห้อง</small></span></button>
     </section>
     <div id="ckcam" hidden>
       <video id="ckv" playsinline muted autoplay></video>
@@ -466,11 +470,11 @@ function todayDone(d) {
   const t = new Date(), ds = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
   const r = ((d && d.attendance && d.attendance.days) || []).find(a => a.d === ds && a.in);
   if (r) { ckShow('ok', '✓', '(' + (d.course ? d.course.name : 'เช็คชื่อ') + ')', 'วันนี้เช็คชื่อแล้ว', 'เวลา ' + r.in + ' · ' + r.st); return true; }
-  else ckShow('', '◎', '(เช็คชื่อ)', 'สแกน QR บนจอหน้าห้อง', 'กดปุ่มเปิดกล้อง แล้วส่องที่ QR บนจอของอาจารย์');
+  else ckShow('', '◎', '(เช็คชื่อ)', 'เช็คชื่อ', 'ตอนอาจารย์ขึ้น QR บนจอ ให้กดปุ่มสแกนด้านล่าง');
 }
 function afterLogin() {
   if (claimErr) return ckShow('bad', '!', '(เช็คชื่อไม่สำเร็จ)', claimErr, 'สแกน QR บนจอหน้าห้องใหม่อีกครั้ง');
-  if (!claim) { if (!todayDone(me)) camStart(); return; } // เข้าระบบแล้วเปิดกล้องให้เลย ถ้าวันนี้ยังไม่ได้เช็คชื่อ
+  if (!claim) { todayDone(me); return; } // ไม่เปิดกล้องเอง ให้กดปุ่มสแกนเมื่อจะเช็คชื่อ
   ckShow('', '…', '(' + claimCourse + ')', 'กำลังเช็คชื่อ', 'รอสักครู่');
   google.script.run.withSuccessHandler(r => {
     claim = null;
@@ -482,7 +486,7 @@ function afterLogin() {
 let camOn = false, camBusy = false, camLast = '', camLastAt = 0, camTs = 0;
 async function camStart() {
   if (camOn) return;
-  $('ckcam').hidden = false; $('camgo').textContent = 'ปิดกล้อง'; $('ckcam').classList.remove('err');
+  $('ckcam').hidden = false; $('camgot').textContent = 'ปิดกล้อง'; $('ckcam').classList.remove('err');
   $('ckmsg').textContent = 'ส่องกล้องไปที่ QR บนจอหน้าห้อง'; $('ckmsg2').textContent = 'เจอแล้วระบบเช็คชื่อให้เอง ไม่ต้องกดอะไร';
   try {
     const v = $('ckv');
@@ -494,7 +498,7 @@ async function camStart() {
   }
 }
 function camStop() {
-  camOn = false; $('ckcam').hidden = true; $('camgo').textContent = '📷 สแกนเช็คชื่อ';
+  camOn = false; $('ckcam').hidden = true; $('camgot').textContent = 'สแกนเช็คชื่อ';
   const v = $('ckv'); if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
 }
 function camLoop(ts) {
